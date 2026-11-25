@@ -1,0 +1,3230 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>E-Tanda Terima Surat & Berkas — Format A4 & 2×A5 Dinamis</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            serif: ['"Times New Roman"', 'Times', 'serif']
+          }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    /* ============================================================
+       CUSTOM STYLES & A4 / 2xA5 PRINT ENGINE
+       ============================================================ */
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background-color: #f1f5f9;
+      color: #0f172a;
+      overflow-x: hidden;
+    }
+
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+
+    /* A4 Sheet Exact Physical Dimensions (210mm x 297mm) */
+    .a4-sheet {
+      width: 210mm;
+      min-height: 297mm;
+      background: #ffffff;
+      color: #000000;
+      position: relative;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      line-height: 1.45;
+    }
+
+    .a4-sheet-screen {
+      box-shadow: 0 20px 40px -15px rgba(15, 23, 42, 0.22), 0 0 0 1px rgba(15, 23, 42, 0.06);
+      transform-origin: top left;
+    }
+
+    .a4-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .a4-table th,
+    .a4-table td {
+      border: 1px solid #1e293b;
+      padding: 6px 8px;
+      vertical-align: top;
+      word-break: break-word;
+    }
+    .a4-table th {
+      background-color: #f1f5f9;
+      font-weight: 700;
+      text-align: center;
+    }
+
+    /* Kop Header Divider Variants */
+    .kop-divider-double {
+      border-top: 3px solid #0f172a;
+      border-bottom: 1px solid #0f172a;
+      height: 6px;
+      width: 100%;
+    }
+    .kop-divider-solid {
+      border-top: 2px solid #0f172a;
+      height: 2px;
+      width: 100%;
+    }
+    .kop-divider-thin {
+      border-top: 1px solid #475569;
+      height: 1px;
+      width: 100%;
+    }
+
+    /* 2 Rangkap A5 dalam 1 Lembar A4 Portrait (210mm x 297mm) */
+    .a4-sheet-duplex {
+      width: 210mm;
+      height: 297mm;
+      min-height: 297mm;
+      max-height: 297mm;
+      padding: 0 !important;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .a5-half {
+      width: 210mm;
+      height: 146.5mm;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      position: relative;
+      line-height: 1.32;
+    }
+
+    .a5-cut-line {
+      height: 4mm;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      padding: 0 10mm;
+      flex-shrink: 0;
+    }
+
+    .a5-cut-line::before {
+      content: '';
+      position: absolute;
+      left: 8mm;
+      right: 8mm;
+      top: 50%;
+      border-top: 1px dashed #64748b;
+    }
+
+    .a5-cut-label {
+      position: relative;
+      z-index: 1;
+      background: #ffffff;
+      padding: 0 8px;
+      font-size: 7.5pt;
+      color: #64748b;
+      letter-spacing: 0.04em;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .a5-badge {
+      display: inline-block;
+      border: 1px solid #1e293b;
+      padding: 1px 7px;
+      font-size: 7.5pt;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      background: #f8fafc;
+      color: #0f172a;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .a5-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .a5-table th,
+    .a5-table td {
+      border: 1px solid #1e293b;
+      padding: 3px 6px;
+      vertical-align: top;
+      word-break: break-word;
+    }
+
+    .a5-table th {
+      background-color: #f1f5f9;
+      font-weight: 700;
+      text-align: center;
+    }
+
+    /* Dedicated Print Portal */
+    #print-portal {
+      display: none;
+    }
+
+    @media print {
+      @page {
+        size: A4 portrait;
+        margin: 0;
+      }
+
+      html, body {
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #ffffff !important;
+        width: 210mm !important;
+        height: auto !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+
+      #auth-screen,
+      #app-shell,
+      #modal-root,
+      #toast-container {
+        display: none !important;
+      }
+
+      #print-portal {
+        display: block !important;
+        width: 210mm !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+
+      #print-portal .a4-sheet {
+        box-shadow: none !important;
+        transform: none !important;
+        width: 210mm !important;
+        min-height: 297mm !important;
+        margin: 0 !important;
+        page-break-after: auto;
+      }
+
+      #print-portal .a4-sheet-duplex {
+        height: 297mm !important;
+        max-height: 297mm !important;
+        overflow: hidden !important;
+      }
+    }
+  </style>
+</head>
+<body class="antialiased selection:bg-indigo-100 selection:text-indigo-900">
+
+  <!-- ============================================================
+       AUTH / LOGIN & INITIAL SUPERADMIN SETUP SCREEN
+       ============================================================ -->
+  <div id="auth-screen" class="min-h-screen hidden items-center justify-center p-4 bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900">
+    <!-- Rendered dynamically by App.renderAuthScreen() -->
+  </div>
+
+  <!-- ============================================================
+       MAIN APPLICATION SHELL (HIDDEN DURING PRINT & UNAUTHENTICATED)
+       ============================================================ -->
+  <div id="app-shell" class="min-h-screen hidden flex-col lg:flex-row">
+    <!-- Mobile Sidebar Backdrop -->
+    <div id="sidebar-backdrop" onclick="App.toggleSidebar(false)" class="fixed inset-0 z-40 bg-slate-900/60 backdrop-blur-xs hidden lg:hidden"></div>
+
+    <!-- Dynamic Navigation Sidebar -->
+    <aside id="app-sidebar" class="fixed lg:sticky top-0 left-0 z-50 h-screen w-72 bg-slate-900 text-slate-200 flex flex-col border-r border-slate-800 transform -translate-x-full lg:translate-x-0 transition-transform duration-200 shrink-0">
+      <div class="p-5 border-b border-slate-800 flex items-center justify-between gap-3">
+        <div class="flex items-center gap-3 min-w-0">
+          <div class="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-md shrink-0">
+            <i data-lucide="file-check-2" class="w-5 h-5"></i>
+          </div>
+          <div class="min-w-0">
+            <h1 id="sidebar-app-name" class="text-sm font-bold text-white truncate">Tanda Terima A4</h1>
+            <p id="sidebar-app-subtitle" class="text-[11px] text-slate-400 truncate">Sistem Administrasi Berkas</p>
+          </div>
+        </div>
+        <button type="button" class="lg:hidden p-2 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white" onclick="App.toggleSidebar(false)" aria-label="Tutup Menu">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Dynamic Navigation Container -->
+      <nav id="dynamic-nav-list" class="flex-1 overflow-y-auto p-3 space-y-1" aria-label="Navigasi Utama"></nav>
+
+      <!-- Authenticated User Profile & Logout Footer -->
+      <div class="p-3.5 border-t border-slate-800 bg-slate-950/70 space-y-2.5">
+        <div id="sidebar-user-card" class="flex items-center gap-2.5"></div>
+        <div class="grid grid-cols-2 gap-1.5">
+          <button type="button" onclick="App.openChangePasswordModal()" class="inline-flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-medium transition">
+            <i data-lucide="key-round" class="w-3.5 h-3.5"></i> Sandi
+          </button>
+          <button type="button" onclick="App.handleLogout()" class="inline-flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-rose-600/20 hover:bg-rose-600/35 text-rose-300 border border-rose-500/30 text-[11px] font-semibold transition">
+            <i data-lucide="log-out" class="w-3.5 h-3.5"></i> Keluar
+          </button>
+        </div>
+        <div class="pt-2 border-t border-slate-800/80 space-y-1.5">
+          <div class="flex items-center justify-between text-[11px]">
+            <span class="text-slate-400">Mode Data</span>
+            <span id="sidebar-storage-badge" class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-500/15 text-emerald-300 border border-emerald-500/20">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Lokal Aman
+            </span>
+          </div>
+          <div class="flex items-center justify-between text-[11px] text-slate-400">
+            <span>Format Cetak</span>
+            <span id="sidebar-format-badge" class="font-semibold text-slate-200">A4 (210×297 mm)</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content Column -->
+    <div class="flex-1 flex flex-col min-w-0 min-h-screen">
+      <!-- Top Header Bar -->
+      <header class="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-slate-200 px-4 sm:px-6 py-3 flex items-center justify-between gap-3">
+        <div class="flex items-center gap-3 min-w-0">
+          <button type="button" class="lg:hidden p-2.5 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 active:scale-95 transition" onclick="App.toggleSidebar(true)" aria-label="Buka Menu">
+            <i data-lucide="menu" class="w-5 h-5"></i>
+          </button>
+          <div class="min-w-0">
+            <h2 id="topbar-title" class="text-base sm:text-lg font-bold text-slate-900 truncate">Dashboard</h2>
+            <p id="topbar-desc" class="text-xs text-slate-500 truncate hidden sm:block">Ringkasan administrasi tanda terima surat &amp; berkas</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2 shrink-0">
+          <span id="topbar-role-pill" class="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border"></span>
+          <button type="button" id="topbar-create-btn" onclick="App.navigateTo('create', { resetDraft: true })" class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-semibold shadow-sm transition active:scale-95">
+            <i data-lucide="plus" class="w-4 h-4"></i>
+            <span class="hidden sm:inline">Buat Baru</span>
+          </button>
+          <button type="button" id="topbar-settings-btn" onclick="App.navigateTo('menus')" class="p-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 transition" title="Atur Menu & Field Dinamis">
+            <i data-lucide="sliders-horizontal" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </header>
+
+      <!-- Active View Container -->
+      <main id="main-view" class="flex-1 p-4 sm:p-6 max-w-[1600px] w-full mx-auto"></main>
+    </div>
+  </div>
+
+  <!-- Dedicated Print Portal -->
+  <div id="print-portal" aria-hidden="true"></div>
+
+  <!-- Custom Modal Root (Zero alert() / confirm()) -->
+  <div id="modal-root" class="fixed inset-0 z-[70] hidden items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs"></div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="fixed bottom-4 right-4 z-[80] flex flex-col gap-2 max-w-sm w-[calc(100vw-2rem)] pointer-events-none"></div>
+
+  <!-- ============================================================
+       APPLICATION JAVASCRIPT (MODULAR ARCHITECTURE)
+       ============================================================ -->
+  <script>
+    'use strict';
+
+    /* ============================================================
+       1. SECURITY & IMAGE OPTIMIZATION UTILITIES
+       ============================================================ */
+    const Security = {
+      /**
+       * Escape HTML special characters to prevent XSS injection.
+       */
+      escapeHtml(val) {
+        if (val === null || val === undefined) return '';
+        return String(val)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      },
+
+      /**
+       * Allow only safe image data URLs or http(s) URLs.
+       */
+      sanitizeImageSrc(src) {
+        const s = String(src || '').trim();
+        if (!s) return '';
+        if (/^data:image\/(png|jpeg|jpg|webp|gif|svg\+xml);base64,[A-Za-z0-9+/=]+$/i.test(s)) {
+          return s;
+        }
+        if (/^https?:\/\/[^\s"'<>]+$/i.test(s)) {
+          return s;
+        }
+        return '';
+      },
+
+      /**
+       * Generate collision-resistant IDs for records, menus, fields, and users.
+       */
+      generateId(prefix = 'id') {
+        const rand = Math.random().toString(36).slice(2, 8);
+        return `${prefix}_${Date.now().toString(36)}_${rand}`;
+      },
+
+      /**
+       * Validate uploaded Kop image MIME type & size (max 5 MB raw before compression).
+       */
+      validateImageFile(file) {
+        const allowed = ['image/png', 'image/jpeg', 'image/webp'];
+        if (!file) return { ok: false, error: 'File tidak ditemukan.' };
+        if (!allowed.includes(file.type)) {
+          return { ok: false, error: 'Format gambar tidak didukung. Gunakan PNG, JPG, atau WebP.' };
+        }
+        if (file.size > 5 * 1024 * 1024) {
+          return { ok: false, error: 'Ukuran gambar terlalu besar (maksimal 5 MB).' };
+        }
+        return { ok: true };
+      },
+
+      /**
+       * Compress Kop Header image via Canvas so LocalStorage & Drive uploads stay fast and sharp.
+       */
+      compressImageToDataUrl(file, maxWidth = 1400, quality = 0.88) {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onerror = () => reject(new Error('Gagal membaca file gambar.'));
+          reader.onload = (ev) => {
+            const img = new Image();
+            img.onerror = () => reject(new Error('File bukan gambar yang valid.'));
+            img.onload = () => {
+              const ratio = img.width > maxWidth ? maxWidth / img.width : 1;
+              const targetW = Math.max(1, Math.round(img.width * ratio));
+              const targetH = Math.max(1, Math.round(img.height * ratio));
+              const canvas = document.createElement('canvas');
+              canvas.width = targetW;
+              canvas.height = targetH;
+              const ctx = canvas.getContext('2d');
+              ctx.clearRect(0, 0, targetW, targetH);
+              ctx.drawImage(img, 0, 0, targetW, targetH);
+              const outMime = file.type === 'image/png' ? 'image/png' : 'image/jpeg';
+              const dataUrl = canvas.toDataURL(outMime, quality);
+              resolve({ dataUrl, mimeType: outMime });
+            };
+            img.src = ev.target.result;
+          };
+          reader.readAsDataURL(file);
+        });
+      }
+    };
+
+    /* ============================================================
+       2. RBAC PERMISSION CATALOG & AUTH MODULE (SUPERADMIN / OPERATOR)
+       ============================================================ */
+    const ROLES = {
+      SUPERADMIN: 'superadmin',
+      OPERATOR: 'operator'
+    };
+
+    const PERMISSION_DEFS = [
+      { key: 'record.view', label: 'Lihat Dashboard & Arsip', group: 'Tanda Terima', operatorAllowed: true, defaultOperator: true },
+      { key: 'record.create', label: 'Buat Tanda Terima Baru', group: 'Tanda Terima', operatorAllowed: true, defaultOperator: true },
+      { key: 'record.edit', label: 'Ubah Tanda Terima', group: 'Tanda Terima', operatorAllowed: true, defaultOperator: true },
+      { key: 'record.delete', label: 'Hapus Arsip Tanda Terima', group: 'Tanda Terima', operatorAllowed: true, defaultOperator: false },
+      { key: 'record.print', label: 'Cetak Format A4 / 2×A5', group: 'Tanda Terima', operatorAllowed: true, defaultOperator: true },
+      { key: 'kop.manage', label: 'Ubah Kop Gambar & Tata Letak A4/A5', group: 'Pengaturan', operatorAllowed: true, defaultOperator: false },
+      { key: 'menu.manage', label: 'Atur Menu, Field, Tabel & TTD Dinamis', group: 'Pengaturan', operatorAllowed: true, defaultOperator: false },
+      { key: 'system.sync', label: 'Integrasi GAS, Backup & Restore JSON', group: 'Sistem', operatorAllowed: true, defaultOperator: false },
+      { key: 'user.manage', label: 'Kelola User & Hak Akses (Khusus Superadmin)', group: 'Keamanan', operatorAllowed: false, defaultOperator: false }
+    ];
+
+    const ALL_PERMISSION_KEYS = PERMISSION_DEFS.map((p) => p.key);
+    const DEFAULT_OPERATOR_PERMS = PERMISSION_DEFS.filter((p) => p.defaultOperator).map((p) => p.key);
+
+    const MENU_PERMISSION_MAP = {
+      dashboard: 'record.view',
+      create: 'record.create',
+      archive: 'record.view',
+      kop: 'kop.manage',
+      menus: 'menu.manage',
+      integration: 'system.sync',
+      users: 'user.manage'
+    };
+
+    const Auth = {
+      STORAGE_KEYS: {
+        LOCAL_USERS: 'tt_a4_v2_local_users',
+        SESSION: 'tt_a4_v2_session'
+      },
+      _session: null,
+
+      async hashLocalPassword(password, salt) {
+        const input = `${salt}:${password}:tt_local_v2`;
+        if (window.crypto && window.crypto.subtle) {
+          try {
+            const data = new TextEncoder().encode(input);
+            const buf = await window.crypto.subtle.digest('SHA-256', data);
+            return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, '0')).join('');
+          } catch (_) {}
+        }
+        let h = 2166136261;
+        for (let i = 0; i < input.length; i++) {
+          h ^= input.charCodeAt(i);
+          h = Math.imul(h, 16777619);
+        }
+        return 'fnv_' + (h >>> 0).toString(16);
+      },
+
+      sanitizePermissions(role, perms) {
+        if (role === ROLES.SUPERADMIN) return [...ALL_PERMISSION_KEYS];
+        const list = Array.isArray(perms) ? perms : DEFAULT_OPERATOR_PERMS;
+        return Array.from(new Set(list.filter((p) => ALL_PERMISSION_KEYS.includes(p) && p !== 'user.manage')));
+      },
+
+      getSession() {
+        if (this._session) return this._session;
+        try {
+          const raw = sessionStorage.getItem(this.STORAGE_KEYS.SESSION);
+          if (!raw) return null;
+          const parsed = JSON.parse(raw);
+          if (!parsed || !parsed.user) return null;
+          if (parsed.expiresAt && new Date(parsed.expiresAt).getTime() <= Date.now()) {
+            this.clearSession();
+            return null;
+          }
+          this._session = parsed;
+          return parsed;
+        } catch (_) {
+          return null;
+        }
+      },
+
+      saveSession(sessionObj) {
+        this._session = sessionObj;
+        try {
+          sessionStorage.setItem(this.STORAGE_KEYS.SESSION, JSON.stringify(sessionObj));
+        } catch (_) {}
+      },
+
+      clearSession() {
+        this._session = null;
+        try {
+          sessionStorage.removeItem(this.STORAGE_KEYS.SESSION);
+        } catch (_) {}
+      },
+
+      isAuthenticated() {
+        return Boolean(this.getSession() && this.getSession().user);
+      },
+
+      getCurrentUser() {
+        const s = this.getSession();
+        return s ? s.user : null;
+      },
+
+      getSessionToken() {
+        const s = this.getSession();
+        return (s && s.sessionToken) || '';
+      },
+
+      isSuperadmin() {
+        const u = this.getCurrentUser();
+        return Boolean(u && u.role === ROLES.SUPERADMIN);
+      },
+
+      can(perm) {
+        const u = this.getCurrentUser();
+        if (!u) return false;
+        if (u.role === ROLES.SUPERADMIN) return true;
+        return Array.isArray(u.permissions) && u.permissions.includes(perm);
+      },
+
+      canAccessMenu(menu) {
+        if (!menu) return false;
+        if (this.isSuperadmin()) return true;
+        if (menu.type === 'custom_filter') return this.can('record.view');
+        if (menu.type === 'custom_page') return true;
+        const reqPerm = menu.requiredPerm || MENU_PERMISSION_MAP[menu.id];
+        if (!reqPerm) return true;
+        if (menu.id === 'create') return this.can('record.create') || this.can('record.edit');
+        return this.can(reqPerm);
+      },
+
+      getLocalUsers() {
+        try {
+          const raw = localStorage.getItem(this.STORAGE_KEYS.LOCAL_USERS);
+          if (!raw) return [];
+          const parsed = JSON.parse(raw);
+          return Array.isArray(parsed) ? parsed : [];
+        } catch (_) {
+          return [];
+        }
+      },
+
+      _commitLocalUsers(users) {
+        localStorage.setItem(this.STORAGE_KEYS.LOCAL_USERS, JSON.stringify(users));
+      },
+
+      hasLocalUsers() {
+        return this.getLocalUsers().length > 0;
+      },
+
+      async setupFirstLocalSuperadmin({ username, fullName, password }) {
+        const cleanUser = String(username || '').trim().toLowerCase();
+        if (!/^[a-z0-9._-]{3,32}$/.test(cleanUser)) {
+          return { ok: false, error: 'Username harus 3–32 karakter (huruf kecil, angka, titik, underscore).' };
+        }
+        if (!String(fullName || '').trim()) {
+          return { ok: false, error: 'Nama lengkap wajib diisi.' };
+        }
+        if (String(password || '').length < 6) {
+          return { ok: false, error: 'Kata sandi minimal 6 karakter.' };
+        }
+        const salt = Security.generateId('salt');
+        const hash = await this.hashLocalPassword(password, salt);
+        const now = new Date().toISOString();
+        const user = {
+          id: Security.generateId('usr'),
+          username: cleanUser,
+          fullName: String(fullName).trim(),
+          role: ROLES.SUPERADMIN,
+          permissions: [...ALL_PERMISSION_KEYS],
+          passwordSalt: salt,
+          passwordHash: hash,
+          active: true,
+          createdAt: now,
+          updatedAt: now
+        };
+        this._commitLocalUsers([user]);
+        const safeUser = {
+          id: user.id, username: user.username, fullName: user.fullName,
+          role: user.role, permissions: user.permissions, active: true
+        };
+        this.saveSession({
+          mode: 'local',
+          sessionToken: '',
+          expiresAt: new Date(Date.now() + 12 * 3600 * 1000).toISOString(),
+          user: safeUser
+        });
+        return { ok: true, user: safeUser };
+      },
+
+      async loginLocal(username, password) {
+        const cleanUser = String(username || '').trim().toLowerCase();
+        const users = this.getLocalUsers();
+        const found = users.find((u) => u.username === cleanUser);
+        if (!found) return { ok: false, error: 'Username atau kata sandi salah.' };
+        if (!found.active) return { ok: false, error: 'Akun Anda sedang dinonaktifkan oleh Superadmin.' };
+
+        const computed = await this.hashLocalPassword(password, found.passwordSalt);
+        if (computed !== found.passwordHash) {
+          return { ok: false, error: 'Username atau kata sandi salah.' };
+        }
+        const safeUser = {
+          id: found.id,
+          username: found.username,
+          fullName: found.fullName,
+          role: found.role,
+          permissions: this.sanitizePermissions(found.role, found.permissions),
+          active: true
+        };
+        this.saveSession({
+          mode: 'local',
+          sessionToken: '',
+          expiresAt: new Date(Date.now() + 12 * 3600 * 1000).toISOString(),
+          user: safeUser
+        });
+        return { ok: true, user: safeUser };
+      },
+
+      async upsertLocalUser(payload) {
+        if (!this.can('user.manage')) return { ok: false, error: 'Akses ditolak: khusus Superadmin.' };
+        const users = [...this.getLocalUsers()];
+        const username = String(payload.username || '').trim().toLowerCase();
+        const fullName = String(payload.fullName || '').trim();
+        const role = payload.role === ROLES.SUPERADMIN ? ROLES.SUPERADMIN : ROLES.OPERATOR;
+        const active = payload.active !== undefined ? Boolean(payload.active) : true;
+        const permissions = this.sanitizePermissions(role, payload.permissions);
+        const now = new Date().toISOString();
+
+        if (!/^[a-z0-9._-]{3,32}$/.test(username)) {
+          return { ok: false, error: 'Username harus 3–32 karakter (huruf kecil, angka, titik, underscore).' };
+        }
+        if (!fullName) return { ok: false, error: 'Nama lengkap wajib diisi.' };
+
+        const existingIdx = payload.id ? users.findIndex((u) => u.id === payload.id) : -1;
+        const duplicate = users.find((u, i) => u.username === username && i !== existingIdx);
+        if (duplicate) return { ok: false, error: `Username "${username}" sudah digunakan.` };
+
+        const activeSuperCount = users.filter((u) => u.role === ROLES.SUPERADMIN && u.active).length;
+
+        if (existingIdx >= 0) {
+          const prev = users[existingIdx];
+          const wasActiveSuper = prev.role === ROLES.SUPERADMIN && prev.active;
+          const willBeActiveSuper = role === ROLES.SUPERADMIN && active;
+          if (wasActiveSuper && !willBeActiveSuper && activeSuperCount <= 1) {
+            return { ok: false, error: 'Tidak dapat menonaktifkan atau mengubah role Superadmin aktif terakhir.' };
+          }
+          let salt = prev.passwordSalt;
+          let hash = prev.passwordHash;
+          if (payload.password) {
+            if (payload.password.length < 6) return { ok: false, error: 'Kata sandi baru minimal 6 karakter.' };
+            salt = Security.generateId('salt');
+            hash = await this.hashLocalPassword(payload.password, salt);
+          }
+          users[existingIdx] = {
+            ...prev,
+            username,
+            fullName,
+            role,
+            permissions,
+            passwordSalt: salt,
+            passwordHash: hash,
+            active,
+            updatedAt: now
+          };
+          this._commitLocalUsers(users);
+          const cur = this.getCurrentUser();
+          if (cur && cur.id === prev.id) {
+            const s = this.getSession();
+            this.saveSession({
+              ...s,
+              user: { id: prev.id, username, fullName, role, permissions, active }
+            });
+          }
+          return { ok: true };
+        }
+
+        if (!payload.password || payload.password.length < 6) {
+          return { ok: false, error: 'Kata sandi akun baru minimal 6 karakter.' };
+        }
+        const salt = Security.generateId('salt');
+        const hash = await this.hashLocalPassword(payload.password, salt);
+        users.push({
+          id: Security.generateId('usr'),
+          username,
+          fullName,
+          role,
+          permissions,
+          passwordSalt: salt,
+          passwordHash: hash,
+          active,
+          createdAt: now,
+          updatedAt: now
+        });
+        this._commitLocalUsers(users);
+        return { ok: true };
+      },
+
+      deleteLocalUser(userId) {
+        if (!this.can('user.manage')) return { ok: false, error: 'Akses ditolak.' };
+        const cur = this.getCurrentUser();
+        if (cur && cur.id === userId) return { ok: false, error: 'Tidak dapat menghapus akun sendiri.' };
+        const users = this.getLocalUsers();
+        const target = users.find((u) => u.id === userId);
+        if (!target) return { ok: false, error: 'Akun tidak ditemukan.' };
+        const activeSupers = users.filter((u) => u.role === ROLES.SUPERADMIN && u.active).length;
+        if (target.role === ROLES.SUPERADMIN && target.active && activeSupers <= 1) {
+          return { ok: false, error: 'Tidak dapat menghapus Superadmin aktif terakhir.' };
+        }
+        this._commitLocalUsers(users.filter((u) => u.id !== userId));
+        return { ok: true };
+      },
+
+      async changeLocalOwnPassword(currentPassword, newPassword) {
+        const cur = this.getCurrentUser();
+        if (!cur) return { ok: false, error: 'Sesi tidak valid.' };
+        if (String(newPassword || '').length < 6) return { ok: false, error: 'Kata sandi baru minimal 6 karakter.' };
+        const users = [...this.getLocalUsers()];
+        const idx = users.findIndex((u) => u.id === cur.id);
+        if (idx < 0) return { ok: false, error: 'Akun tidak ditemukan.' };
+        const check = await this.hashLocalPassword(currentPassword, users[idx].passwordSalt);
+        if (check !== users[idx].passwordHash) return { ok: false, error: 'Kata sandi lama tidak sesuai.' };
+        const newSalt = Security.generateId('salt');
+        users[idx].passwordSalt = newSalt;
+        users[idx].passwordHash = await this.hashLocalPassword(newPassword, newSalt);
+        users[idx].updatedAt = new Date().toISOString();
+        this._commitLocalUsers(users);
+        return { ok: true };
+      }
+    };
+
+    /* ============================================================
+       3. DEFAULT CONFIGURATION & DYNAMIC SCHEMA
+       ============================================================ */
+    const ICON_OPTIONS = [
+      'layout-dashboard', 'file-plus-2', 'archive', 'image', 'sliders-horizontal',
+      'database', 'folder-open', 'mail', 'inbox', 'send', 'bookmark', 'clipboard-list',
+      'building-2', 'printer', 'file-text', 'shield-check', 'star', 'briefcase'
+    ];
+
+    function getDefaultConfig() {
+      return {
+        version: 2,
+        appInfo: {
+          name: 'Tanda Terima A4',
+          subtitle: 'Sistem Administrasi Berkas'
+        },
+        menus: [
+          { id: 'dashboard', label: 'Dashboard', description: 'Ringkasan status tanda terima berkas', icon: 'layout-dashboard', type: 'builtin', visible: true, locked: false, requiredPerm: 'record.view', order: 1 },
+          { id: 'create', label: 'Buat Tanda Terima', description: 'Input berkas & pratinjau cetak A4 / 2×A5 langsung', icon: 'file-plus-2', type: 'builtin', visible: true, locked: false, requiredPerm: 'record.create', order: 2 },
+          { id: 'archive', label: 'Arsip Tanda Terima', description: 'Daftar, pencarian, edit & cetak ulang berkas', icon: 'archive', type: 'builtin', visible: true, locked: false, requiredPerm: 'record.view', order: 3 },
+          { id: 'kop', label: 'Kop Header & Format A4', description: 'Ubah gambar kop surat, margin & tata letak A4/2×A5', icon: 'image', type: 'builtin', visible: true, locked: false, requiredPerm: 'kop.manage', order: 4 },
+          { id: 'menus', label: 'Pengaturan Dinamis', description: 'Atur menu navigasi, field form, tabel & tanda tangan', icon: 'sliders-horizontal', type: 'builtin', visible: true, locked: true, requiredPerm: 'menu.manage', order: 5 },
+          { id: 'users', label: 'User & Hak Akses', description: 'Kelola akun Superadmin, Operator & matriks izin', icon: 'shield-check', type: 'builtin', visible: true, locked: true, requiredPerm: 'user.manage', order: 6 },
+          { id: 'integration', label: 'Integrasi GAS & Data', description: 'Koneksi Google Apps Script, backup & restore JSON', icon: 'database', type: 'builtin', visible: true, locked: false, requiredPerm: 'system.sync', order: 7 }
+        ],
+        kop: {
+          mode: 'image', // 'image' | 'text'
+          imageSrc: '',
+          imageUrlInput: '',
+          driveFileId: '',
+          heightMm: 34,
+          fitMode: 'contain', // 'contain' | 'cover' | 'fill'
+          align: 'center', // 'left' | 'center' | 'right'
+          showDivider: true,
+          dividerStyle: 'double', // 'double' | 'solid' | 'thin' | 'none'
+          marginBottomMm: 6,
+          textLine1: 'PEMERINTAH KOTA SURABAYA',
+          textLine2: 'DINAS ADMINISTRASI & KEARSIPAN TERPADU',
+          textLine3: 'Jl. Taman Surya No. 1, Surabaya 60272 | Telp. (031) 5312144 | Email: arsip@instansi.go.id'
+        },
+        a4: {
+          printMode: 'a4_single', // 'a4_single' | 'a5_duplex'
+          copy1Label: 'RANGKAP 1 — ARSIP INSTANSI',
+          copy2Label: 'RANGKAP 2 — PENERIMA / PENGIRIM',
+          showCutLine: true,
+          marginMm: 15,
+          fontFamily: 'serif', // 'serif' | 'sans'
+          fontSizePt: 11,
+          docTitle: 'TANDA TERIMA SURAT / BERKAS',
+          docSubtitle: '',
+          showDocNumberUnderTitle: true,
+          introText: 'Telah diterima dengan baik surat / dokumen / berkas dengan rincian sebagai berikut:',
+          closingText: 'Demikian tanda terima ini dibuat dengan sebenarnya untuk dapat dipergunakan sebagaimana mestinya.',
+          footerNote: 'Dicetak melalui Sistem Tanda Terima Berkas Digital — Format A4',
+          showFooterNote: true,
+          city: 'Surabaya',
+          autoNumberPattern: 'TT/{YYYY}/{MM}/{SEQ}',
+          showRowNumber: true
+        },
+        metaFields: [
+          { id: 'tanggal', label: 'Hari / Tanggal', type: 'date', visible: true, required: true, placeholder: '', defaultValue: '' },
+          { id: 'pengirim', label: 'Yang Menyerahkan', type: 'text', visible: true, required: true, placeholder: 'Nama pengirim / kurir / staf', defaultValue: '' },
+          { id: 'instansiPengirim', label: 'Asal Instansi / Bagian', type: 'text', visible: true, required: false, placeholder: 'Nama instansi / divisi pengirim', defaultValue: '' },
+          { id: 'penerima', label: 'Yang Menerima', type: 'text', visible: true, required: true, placeholder: 'Nama penerima berkas', defaultValue: '' },
+          { id: 'instansiPenerima', label: 'Unit / Tujuan', type: 'text', visible: true, required: false, placeholder: 'Divisi / ruangan penerima', defaultValue: '' },
+          { id: 'perihal', label: 'Perihal / Ringkasan', type: 'text', visible: true, required: false, placeholder: 'Contoh: Penyerahan Berkas Laporan Bulanan', defaultValue: '' }
+        ],
+        tableColumns: [
+          { id: 'noSurat', label: 'Nomor Surat / Berkas', width: '22%', align: 'left', visible: true, placeholder: '001/SK/XI/2026' },
+          { id: 'namaBerkas', label: 'Jenis / Uraian Berkas', width: '36%', align: 'left', visible: true, placeholder: 'Surat Permohonan / Dokumen Kontrak' },
+          { id: 'jumlah', label: 'Jumlah', width: '10%', align: 'center', visible: true, placeholder: '1' },
+          { id: 'satuan', label: 'Satuan', width: '12%', align: 'center', visible: true, placeholder: 'Berkas' },
+          { id: 'keterangan', label: 'Keterangan', width: '20%', align: 'left', visible: true, placeholder: 'Asli / Fotokopi / Lengkap' }
+        ],
+        signatures: [
+          { id: 'sig_giver', roleLabel: 'Yang Menyerahkan,', subLabel: 'Pengirim Berkas', defaultName: '', defaultIdentity: '', bindMetaField: 'pengirim', visible: true },
+          { id: 'sig_receiver', roleLabel: 'Yang Menerima,', subLabel: 'Penerima Berkas', defaultName: '', defaultIdentity: '', bindMetaField: 'penerima', visible: true },
+          { id: 'sig_approver', roleLabel: 'Mengetahui,', subLabel: 'Kepala Bagian / Pimpinan', defaultName: '', defaultIdentity: 'NIP. -', bindMetaField: '', visible: false }
+        ],
+        gas: {
+          enabled: false,
+          endpointUrl: '',
+          lastSyncedAt: ''
+        }
+      };
+    }
+
+    /* ============================================================
+       4. CENTRALIZED DATA SERVICE (LocalStorage + GAS + Spreadsheet + Drive)
+       ============================================================ */
+    const DataService = {
+      STORAGE_KEYS: {
+        CONFIG: 'tt_a4_v1_config',
+        RECORDS: 'tt_a4_v1_records'
+      },
+      _cache: {
+        config: null,
+        records: null,
+        lastSync: null
+      },
+      _writeLock: false,
+      _inFlight: new Map(),
+
+      getConfig() {
+        if (this._cache.config) return this._cache.config;
+        const defaults = getDefaultConfig();
+        try {
+          const raw = localStorage.getItem(this.STORAGE_KEYS.CONFIG);
+          if (!raw) {
+            this._cache.config = defaults;
+            return defaults;
+          }
+          const parsed = JSON.parse(raw);
+          const merged = {
+            ...defaults,
+            ...parsed,
+            appInfo: { ...defaults.appInfo, ...(parsed.appInfo || {}) },
+            kop: { ...defaults.kop, ...(parsed.kop || {}) },
+            a4: { ...defaults.a4, ...(parsed.a4 || {}) },
+            gas: { ...defaults.gas, ...(parsed.gas || {}) },
+            menus: Array.isArray(parsed.menus) && parsed.menus.length ? parsed.menus : defaults.menus,
+            metaFields: Array.isArray(parsed.metaFields) && parsed.metaFields.length ? parsed.metaFields : defaults.metaFields,
+            tableColumns: Array.isArray(parsed.tableColumns) && parsed.tableColumns.length ? parsed.tableColumns : defaults.tableColumns,
+            signatures: Array.isArray(parsed.signatures) && parsed.signatures.length ? parsed.signatures : defaults.signatures
+          };
+          if (!merged.menus.some((m) => m.id === 'menus')) {
+            merged.menus.push(defaults.menus.find((m) => m.id === 'menus'));
+          }
+          if (!merged.menus.some((m) => m.id === 'users')) {
+            merged.menus.push(defaults.menus.find((m) => m.id === 'users'));
+          }
+          this._cache.config = merged;
+          return merged;
+        } catch (err) {
+          console.error('Config parse error:', err);
+          this._cache.config = defaults;
+          return defaults;
+        }
+      },
+
+      saveConfig(cfg) {
+        try {
+          localStorage.setItem(this.STORAGE_KEYS.CONFIG, JSON.stringify(cfg));
+          this._cache.config = cfg;
+          return { ok: true };
+        } catch (err) {
+          console.error('Save config error:', err);
+          return { ok: false, error: 'Penyimpanan penuh. Coba gunakan gambar Kop yang lebih kecil atau unggah via Google Drive.' };
+        }
+      },
+
+      getRecords() {
+        if (this._cache.records) return this._cache.records;
+        try {
+          const raw = localStorage.getItem(this.STORAGE_KEYS.RECORDS);
+          if (!raw) {
+            this._cache.records = [];
+            return [];
+          }
+          const parsed = JSON.parse(raw);
+          this._cache.records = Array.isArray(parsed) ? parsed : [];
+          return this._cache.records;
+        } catch (err) {
+          console.error('Records parse error:', err);
+          this._cache.records = [];
+          return [];
+        }
+      },
+
+      _commitRecords(records) {
+        localStorage.setItem(this.STORAGE_KEYS.RECORDS, JSON.stringify(records));
+        this._cache.records = records;
+      },
+
+      async saveRecord(record) {
+        if (this._writeLock) {
+          return { ok: false, error: 'Proses penyimpanan sebelumnya masih berjalan.' };
+        }
+        this._writeLock = true;
+        try {
+          const now = new Date().toISOString();
+          const actor = Auth.getCurrentUser();
+          const records = [...this.getRecords()];
+          const existingIdx = record.id ? records.findIndex((r) => r.id === record.id) : -1;
+
+          const toSave = {
+            ...record,
+            id: record.id || Security.generateId('tt'),
+            nomor: String(record.nomor || '').trim(),
+            status: record.status || 'Diterima',
+            createdBy: record.createdBy || (actor ? actor.username : 'local'),
+            updatedBy: actor ? actor.username : 'local',
+            createdAt: record.createdAt || now,
+            updatedAt: now
+          };
+
+          const cfg = this.getConfig();
+          if (cfg.gas.enabled && cfg.gas.endpointUrl && Auth.getSessionToken()) {
+            const remoteRes = await this._syncToGas('upsertRecord', toSave);
+            if (!remoteRes || !remoteRes.ok) {
+              return { ok: false, error: (remoteRes && remoteRes.error) || 'Gagal menyimpan ke server GAS.' };
+            }
+          }
+
+          if (existingIdx >= 0) {
+            records[existingIdx] = toSave;
+          } else {
+            records.unshift(toSave);
+          }
+          this._commitRecords(records);
+          return { ok: true, data: toSave };
+        } catch (err) {
+          return { ok: false, error: (err && err.message) || 'Gagal menyimpan data.' };
+        } finally {
+          this._writeLock = false;
+        }
+      },
+
+      async deleteRecord(id) {
+        if (this._writeLock) {
+          return { ok: false, error: 'Operasi lain sedang berlangsung.' };
+        }
+        this._writeLock = true;
+        try {
+          const cfg = this.getConfig();
+          if (cfg.gas.enabled && cfg.gas.endpointUrl && Auth.getSessionToken()) {
+            const remoteRes = await this._syncToGas('deleteRecord', { id });
+            if (!remoteRes || !remoteRes.ok) {
+              return { ok: false, error: (remoteRes && remoteRes.error) || 'Gagal menghapus di server GAS.' };
+            }
+          }
+          const filtered = this.getRecords().filter((r) => r.id !== id);
+          this._commitRecords(filtered);
+          return { ok: true };
+        } finally {
+          this._writeLock = false;
+        }
+      },
+
+      generateNextNumber() {
+        const cfg = this.getConfig();
+        const pattern = (cfg.a4 && cfg.a4.autoNumberPattern) || 'TT/{YYYY}/{MM}/{SEQ}';
+        const now = new Date();
+        const yyyy = String(now.getFullYear());
+        const mm = String(now.getMonth() + 1).padStart(2, '0');
+        const dd = String(now.getDate()).padStart(2, '0');
+        const seq = String(this.getRecords().length + 1).padStart(3, '0');
+        return pattern
+          .replace(/\{YYYY\}/g, yyyy)
+          .replace(/\{MM\}/g, mm)
+          .replace(/\{DD\}/g, dd)
+          .replace(/\{SEQ\}/g, seq);
+      },
+
+      async _syncToGas(action, payload, isPublic = false) {
+        const cfg = this.getConfig();
+        if (!cfg.gas.endpointUrl) {
+          return { ok: false, code: 'NO_ENDPOINT', error: 'Endpoint Web App GAS belum diatur.' };
+        }
+        const reqKey = `${action}:${JSON.stringify(payload || {}).slice(0, 80)}`;
+        if (this._inFlight.has(reqKey)) return this._inFlight.get(reqKey);
+
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 18000);
+
+        const bodyPayload = {
+          action,
+          sessionToken: isPublic ? '' : Auth.getSessionToken(),
+          payload: payload || {}
+        };
+
+        const promise = fetch(cfg.gas.endpointUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify(bodyPayload),
+          signal: controller.signal
+        })
+          .then(async (resp) => {
+            clearTimeout(timer);
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            const json = await resp.json();
+            if (!isPublic && json && (json.code === 'UNAUTHORIZED' || json.code === 'SESSION_EXPIRED')) {
+              Auth.clearSession();
+              if (typeof App !== 'undefined' && App.showAuthScreen) {
+                App.showAuthScreen('Sesi berakhir. Silakan login kembali.');
+              }
+            }
+            return json;
+          })
+          .catch((err) => {
+            clearTimeout(timer);
+            if (err && err.name === 'AbortError') {
+              return { ok: false, code: 'TIMEOUT', error: 'Server GAS tidak merespons (timeout 18 detik).' };
+            }
+            return { ok: false, code: 'NETWORK_ERROR', error: (err && err.message) || 'Gagal menghubungi server GAS.' };
+          })
+          .finally(() => {
+            this._inFlight.delete(reqKey);
+          });
+
+        this._inFlight.set(reqKey, promise);
+        return promise;
+      },
+
+      async gasLogin(username, password) {
+        const res = await this._syncToGas('login', { username, password }, true);
+        if (res && res.ok && res.data && res.data.user) {
+          Auth.saveSession({
+            mode: 'gas',
+            sessionToken: res.data.sessionToken,
+            expiresAt: res.data.expiresAt,
+            user: res.data.user
+          });
+          return { ok: true, user: res.data.user };
+        }
+        return { ok: false, error: (res && res.error) || 'Login gagal.' };
+      },
+
+      async gasLogout() {
+        const cfg = this.getConfig();
+        if (cfg.gas.enabled && cfg.gas.endpointUrl && Auth.getSessionToken()) {
+          await this._syncToGas('logout', {}).catch(() => {});
+        }
+        Auth.clearSession();
+      },
+
+      async gasChangeOwnPassword(currentPassword, newPassword) {
+        return this._syncToGas('changeOwnPassword', { currentPassword, newPassword });
+      },
+
+      async gasListUsers() {
+        return this._syncToGas('listUsers', {});
+      },
+
+      async gasUpsertUser(userPayload) {
+        return this._syncToGas('upsertUser', userPayload);
+      },
+
+      async gasDeleteUser(id) {
+        return this._syncToGas('deleteUser', { id });
+      },
+
+      async bootstrapFromGas() {
+        const res = await this._syncToGas('bootstrap', { page: 1, pageSize: 100 });
+        if (!res || !res.ok) {
+          return { ok: false, code: res && res.code, error: (res && res.error) || 'Gagal memuat data dari GAS.' };
+        }
+        if (res.data && res.data.user) {
+          const curSess = Auth.getSession();
+          if (curSess) {
+            Auth.saveSession({ ...curSess, user: res.data.user });
+          }
+        }
+        if (res.data && res.data.config) {
+          const current = this.getConfig();
+          const mergedRemote = {
+            ...current,
+            ...res.data.config,
+            gas: { ...current.gas, lastSyncedAt: new Date().toISOString() }
+          };
+          this.saveConfig(mergedRemote);
+        }
+        if (res.data && Array.isArray(res.data.records)) {
+          this._commitRecords(res.data.records);
+        }
+        this._cache.lastSync = new Date().toISOString();
+        return {
+          ok: true,
+          recordCount: (res.data && Array.isArray(res.data.records)) ? res.data.records.length : 0,
+          hasConfig: Boolean(res.data && res.data.config)
+        };
+      },
+
+      async pushConfigToGas() {
+        const cfg = this.getConfig();
+        const safeConfig = JSON.parse(JSON.stringify(cfg));
+        delete safeConfig.gas;
+        const res = await this._syncToGas('saveConfig', { config: safeConfig });
+        if (res && res.ok) {
+          cfg.gas.lastSyncedAt = new Date().toISOString();
+          this.saveConfig(cfg);
+          return { ok: true };
+        }
+        return { ok: false, error: (res && res.error) || 'Gagal menyimpan pengaturan ke Spreadsheet.' };
+      },
+
+      async uploadKopToDrive(dataUrl, mimeType, fileName) {
+        const cfg = this.getConfig();
+        if (!cfg.gas.enabled || !cfg.gas.endpointUrl || !Auth.getSessionToken()) {
+          return { ok: false, skipped: true, error: 'Mode GAS belum aktif.' };
+        }
+        const base64Data = dataUrl.includes(',') ? dataUrl.split(',')[1] : dataUrl;
+        const res = await this._syncToGas('uploadKopImage', {
+          fileName: fileName || `kop-header-${Date.now()}.png`,
+          mimeType: mimeType || 'image/png',
+          base64Data
+        });
+        if (res && res.ok && res.data) {
+          return { ok: true, data: res.data };
+        }
+        return { ok: false, error: (res && res.error) || 'Gagal mengunggah gambar Kop ke Google Drive.' };
+      },
+
+      async pushAllRecordsToGas() {
+        const records = this.getRecords();
+        if (records.length === 0) {
+          return { ok: false, error: 'Tidak ada data lokal untuk dikirim ke Spreadsheet.' };
+        }
+        const res = await this._syncToGas('batchUpsertRecords', { records });
+        if (res && res.ok) {
+          const cfg = this.getConfig();
+          cfg.gas.lastSyncedAt = new Date().toISOString();
+          this.saveConfig(cfg);
+          return { ok: true, count: res.count || records.length };
+        }
+        return { ok: false, error: (res && res.error) || 'Gagal mengirim data batch ke Spreadsheet.' };
+      }
+    };
+
+    /* ============================================================
+       5. DATE & FORMATTING HELPERS
+       ============================================================ */
+    const Format = {
+      todayISO() {
+        const d = new Date();
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+      },
+
+      indoDate(isoStr, includeWeekday = false) {
+        if (!isoStr) return '-';
+        const d = new Date(isoStr + (isoStr.length === 10 ? 'T00:00:00' : ''));
+        if (isNaN(d.getTime())) return isoStr;
+        const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+        const months = [
+          'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+          'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+        ];
+        const base = `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+        return includeWeekday ? `${days[d.getDay()]}, ${base}` : base;
+      },
+
+      statusBadge(status) {
+        const map = {
+          'Diterima': 'bg-emerald-50 text-emerald-700 border-emerald-200',
+          'Diproses': 'bg-amber-50 text-amber-700 border-amber-200',
+          'Arsip': 'bg-slate-100 text-slate-700 border-slate-200',
+          'Revisi': 'bg-rose-50 text-rose-700 border-rose-200'
+        };
+        const cls = map[status] || 'bg-indigo-50 text-indigo-700 border-indigo-200';
+        return `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border ${cls}">${Security.escapeHtml(status || 'Diterima')}</span>`;
+      }
+    };
+
+    /* ============================================================
+       6. UI NOTIFICATION & MODAL HELPERS (NO alert()/confirm())
+       ============================================================ */
+    const UI = {
+      toast(message, type = 'info') {
+        const container = document.getElementById('toast-container');
+        if (!container) return;
+        const styles = {
+          success: 'bg-emerald-600 text-white',
+          error: 'bg-rose-600 text-white',
+          warning: 'bg-amber-500 text-white',
+          info: 'bg-slate-800 text-white'
+        };
+        const icons = {
+          success: 'check-circle-2',
+          error: 'alert-circle',
+          warning: 'alert-triangle',
+          info: 'info'
+        };
+        const el = document.createElement('div');
+        el.className = `pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg text-sm font-medium transform transition-all duration-200 translate-y-2 opacity-0 ${styles[type] || styles.info}`;
+        el.innerHTML = `
+          <i data-lucide="${icons[type] || 'info'}" class="w-4 h-4 shrink-0"></i>
+          <span class="flex-1">${Security.escapeHtml(message)}</span>
+        `;
+        container.appendChild(el);
+        lucide.createIcons({ nodes: [el] });
+        requestAnimationFrame(() => el.classList.remove('translate-y-2', 'opacity-0'));
+        setTimeout(() => {
+          el.classList.add('opacity-0', 'translate-y-2');
+          setTimeout(() => el.remove(), 220);
+        }, 3200);
+      },
+
+      confirm({ title, message, confirmText = 'Ya, Lanjutkan', danger = false, onConfirm }) {
+        const root = document.getElementById('modal-root');
+        root.classList.remove('hidden');
+        root.classList.add('flex');
+        root.innerHTML = `
+          <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border border-slate-200">
+            <div class="flex items-start gap-3">
+              <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${danger ? 'bg-rose-100 text-rose-600' : 'bg-indigo-100 text-indigo-600'}">
+                <i data-lucide="${danger ? 'alert-triangle' : 'help-circle'}" class="w-5 h-5"></i>
+              </div>
+              <div class="flex-1 min-w-0">
+                <h3 class="text-base font-bold text-slate-900">${Security.escapeHtml(title)}</h3>
+                <p class="text-sm text-slate-600 mt-1">${Security.escapeHtml(message)}</p>
+              </div>
+            </div>
+            <div class="mt-6 flex items-center justify-end gap-2">
+              <button type="button" id="modal-cancel-btn" class="px-4 py-2 rounded-xl border border-slate-200 text-slate-700 text-sm font-medium hover:bg-slate-50 transition">Batal</button>
+              <button type="button" id="modal-confirm-btn" class="px-4 py-2 rounded-xl text-white text-sm font-semibold transition ${danger ? 'bg-rose-600 hover:bg-rose-700' : 'bg-indigo-600 hover:bg-indigo-700'}">${Security.escapeHtml(confirmText)}</button>
+            </div>
+          </div>
+        `;
+        lucide.createIcons({ nodes: [root] });
+        const close = () => {
+          root.classList.add('hidden');
+          root.classList.remove('flex');
+          root.innerHTML = '';
+        };
+        document.getElementById('modal-cancel-btn').onclick = close;
+        document.getElementById('modal-confirm-btn').onclick = () => {
+          close();
+          if (typeof onConfirm === 'function') onConfirm();
+        };
+      },
+
+      openCustomModal(htmlContent, maxWidthClass = 'max-w-2xl') {
+        const root = document.getElementById('modal-root');
+        root.classList.remove('hidden');
+        root.classList.add('flex');
+        root.innerHTML = `
+          <div class="bg-white rounded-2xl shadow-2xl ${maxWidthClass} w-full max-h-[92vh] flex flex-col border border-slate-200 overflow-hidden">
+            ${htmlContent}
+          </div>
+        `;
+        lucide.createIcons({ nodes: [root] });
+      },
+
+      closeModal() {
+        const root = document.getElementById('modal-root');
+        root.classList.add('hidden');
+        root.classList.remove('flex');
+        root.innerHTML = '';
+      }
+    };
+
+    /* ============================================================
+       7. A4 & 2xA5 DOCUMENT RENDER ENGINE
+       ============================================================ */
+    const A4Renderer = {
+      renderKopHtml(kop, compact = false) {
+        const safeSrc = Security.sanitizeImageSrc(kop.imageSrc);
+        const alignClass = kop.align === 'left' ? 'justify-start' : kop.align === 'right' ? 'justify-end' : 'justify-center';
+        const fitClass = kop.fitMode === 'cover' ? 'object-cover w-full' : kop.fitMode === 'fill' ? 'object-fill w-full' : 'object-contain max-w-full';
+        const baseHeight = Number(kop.heightMm) || 34;
+        const finalHeight = compact ? Math.max(14, Math.min(26, Math.round(baseHeight * 0.62))) : baseHeight;
+        const baseMargin = Number(kop.marginBottomMm) || 6;
+        const finalMargin = compact ? Math.max(2, Math.round(baseMargin * 0.5)) : baseMargin;
+
+        const dividerMap = {
+          double: `<div class="kop-divider-double ${compact ? 'mt-1' : 'mt-2'}"></div>`,
+          solid: `<div class="kop-divider-solid ${compact ? 'mt-1' : 'mt-2'}"></div>`,
+          thin: `<div class="kop-divider-thin ${compact ? 'mt-1' : 'mt-2'}"></div>`,
+          none: ''
+        };
+        const dividerHtml = kop.showDivider ? (dividerMap[kop.dividerStyle] || '') : '';
+
+        if (kop.mode === 'image') {
+          if (safeSrc) {
+            return `
+              <div style="margin-bottom: ${finalMargin}mm;">
+                <div class="w-full flex ${alignClass} overflow-hidden" style="height: ${finalHeight}mm;">
+                  <img
+                    src="${safeSrc}"
+                    alt="Kop Surat Header"
+                    class="${fitClass} h-full"
+                    onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+                  />
+                  <div style="display:none;" class="w-full h-full border-2 border-dashed border-slate-300 rounded-lg items-center justify-center text-slate-400 text-xs">
+                    Gambar Kop gagal dimuat — periksa kembali gambar di menu Kop Header
+                  </div>
+                </div>
+                ${dividerHtml}
+              </div>
+            `;
+          }
+          return `
+            <div style="margin-bottom: ${finalMargin}mm;">
+              <div class="w-full flex items-center justify-between gap-3 px-3 ${compact ? 'py-1.5' : 'py-3'} border border-dashed border-slate-300 rounded-lg bg-slate-50/70" style="min-height: ${compact ? Math.max(15, finalHeight) : Math.max(24, finalHeight)}mm;">
+                <div class="flex items-center gap-2.5">
+                  <svg width="${compact ? 30 : 46}" height="${compact ? 30 : 46}" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" class="shrink-0">
+                    <rect width="48" height="48" rx="10" fill="#E0E7FF"/>
+                    <path d="M14 16H34V32H14V16Z" stroke="#4338CA" stroke-width="2.2" stroke-linejoin="round"/>
+                    <path d="M18 28L22.5 23L26 26.5L29 23.5L32 28" stroke="#4338CA" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <circle cx="20.5" cy="20.5" r="1.8" fill="#4338CA"/>
+                  </svg>
+                  <div class="text-left">
+                    <div class="font-bold text-slate-800 ${compact ? 'text-[11px]' : 'text-sm'} tracking-wide">AREA KOP SURAT GAMBAR (BANNER / LOGO INSTANSI)</div>
+                    <div class="${compact ? 'text-[9.5px]' : 'text-xs'} text-slate-500 mt-0.5">Unggah gambar Kop Surat pada menu <strong>Kop Header &amp; Format A4</strong>.</div>
+                  </div>
+                </div>
+              </div>
+              ${dividerHtml}
+            </div>
+          `;
+        }
+
+        return `
+          <div style="margin-bottom: ${finalMargin}mm;" class="text-center">
+            <div class="font-bold tracking-wide" style="font-size: ${compact ? '10.5pt' : '13pt'};">${Security.escapeHtml(kop.textLine1)}</div>
+            <div class="font-bold tracking-wide" style="font-size: ${compact ? '12pt' : '15pt'};">${Security.escapeHtml(kop.textLine2)}</div>
+            <div class="text-slate-700 mt-0.5" style="font-size: ${compact ? '8pt' : '9.5pt'};">${Security.escapeHtml(kop.textLine3)}</div>
+            ${dividerHtml}
+          </div>
+        `;
+      },
+
+      renderA5HalfHtml(record, cfg, copyLabel) {
+        const a4 = cfg.a4;
+        const padX = Math.min(18, Math.max(8, Number(a4.marginMm) || 12));
+        const padY = 6;
+        const baseFont = Math.min(11, Math.max(8.5, (Number(a4.fontSizePt) || 11) - 1.8));
+        const fontClass = a4.fontFamily === 'sans' ? 'font-sans' : 'font-serif';
+
+        const visibleMeta = cfg.metaFields.filter((f) => f.visible);
+        const visibleCols = cfg.tableColumns.filter((c) => c.visible);
+        const visibleSigs = cfg.signatures.filter((s) => s.visible);
+        const items = Array.isArray(record.items) && record.items.length ? record.items : [{}];
+
+        const metaGridHtml = visibleMeta.map((field) => {
+          let rawVal = (record.meta && record.meta[field.id]) || '';
+          if (field.type === 'date' && rawVal) rawVal = Format.indoDate(rawVal, false);
+          return `
+            <div class="flex gap-1 min-w-0 leading-tight">
+              <span class="shrink-0 text-slate-700" style="width: 38%;">${Security.escapeHtml(field.label)}</span>
+              <span class="shrink-0">:</span>
+              <span class="font-medium truncate">${Security.escapeHtml(rawVal || '-')}</span>
+            </div>
+          `;
+        }).join('');
+
+        const thRowNumber = a4.showRowNumber ? `<th style="width: 5%;">No</th>` : '';
+        const thCols = visibleCols.map((col) => `
+          <th style="width: ${Security.escapeHtml(col.width || 'auto')};">${Security.escapeHtml(col.label)}</th>
+        `).join('');
+
+        const bodyRows = items.map((item, idx) => {
+          const tdNo = a4.showRowNumber ? `<td style="text-align: center;">${idx + 1}</td>` : '';
+          const tdCols = visibleCols.map((col) => `<td style="text-align: ${col.align || 'left'};">${Security.escapeHtml(item[col.id] || '')}</td>`).join('');
+          return `<tr>${tdNo}${tdCols}</tr>`;
+        }).join('');
+
+        const sigGridCols = visibleSigs.length === 1 ? 'grid-cols-1' : visibleSigs.length === 2 ? 'grid-cols-2' : 'grid-cols-3';
+        const dateLabel = record.meta && record.meta.tanggal ? Format.indoDate(record.meta.tanggal, false) : Format.indoDate(Format.todayISO(), false);
+
+        const sigHtml = visibleSigs.map((sig, i) => {
+          const customSig = (record.signatures && record.signatures[sig.id]) || {};
+          const boundVal = sig.bindMetaField && record.meta ? record.meta[sig.bindMetaField] : '';
+          const displayName = customSig.name || boundVal || sig.defaultName || '....................................';
+          const displayId = customSig.identity || sig.defaultIdentity || '';
+          const showCityDate = i === visibleSigs.length - 1;
+
+          return `
+            <div class="text-center flex flex-col justify-between px-1">
+              <div>
+                <div style="min-height: 13px; font-size: ${Math.max(7.5, baseFont - 0.8)}pt;">
+                  ${showCityDate ? `${Security.escapeHtml(a4.city || 'Surabaya')}, ${Security.escapeHtml(dateLabel)}` : '&nbsp;'}
+                </div>
+                <div class="font-semibold">${Security.escapeHtml(sig.roleLabel)}</div>
+              </div>
+              <div style="height: 12mm;"></div>
+              <div>
+                <div class="font-bold underline underline-offset-2">${Security.escapeHtml(displayName)}</div>
+                ${displayId ? `<div style="font-size: ${Math.max(7.2, baseFont - 1.3)}pt;">${Security.escapeHtml(displayId)}</div>` : ''}
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        return `
+          <div class="a5-half ${fontClass}" style="padding: ${padY}mm ${padX}mm; font-size: ${baseFont}pt;">
+            ${this.renderKopHtml(cfg.kop, true)}
+            <div class="flex items-start justify-between gap-2 mb-2">
+              <div class="flex-1 text-center">
+                <div class="font-bold uppercase tracking-wide underline underline-offset-2" style="font-size: ${baseFont + 1.5}pt;">
+                  ${Security.escapeHtml(a4.docTitle || 'TANDA TERIMA SURAT / BERKAS')}
+                </div>
+                ${a4.showDocNumberUnderTitle ? `<div style="font-size: ${Math.max(8, baseFont - 0.3)}pt;">Nomor: <strong>${Security.escapeHtml(record.nomor || '-')}</strong></div>` : ''}
+              </div>
+              ${copyLabel ? `<div class="shrink-0"><span class="a5-badge">${Security.escapeHtml(copyLabel)}</span></div>` : ''}
+            </div>
+            ${visibleMeta.length ? `<div class="grid grid-cols-2 gap-x-4 gap-y-0.5 mb-2" style="font-size: ${Math.max(8, baseFont - 0.4)}pt;">${metaGridHtml}</div>` : ''}
+            <div class="mb-2">
+              <table class="a5-table" style="font-size: ${Math.max(7.8, baseFont - 0.6)}pt;">
+                <thead><tr>${thRowNumber}${thCols}</tr></thead>
+                <tbody>${bodyRows}</tbody>
+              </table>
+            </div>
+            ${record.notes ? `<div class="mb-1.5 px-2 py-1 border border-slate-400 rounded-xs" style="font-size: ${Math.max(7.5, baseFont - 1)}pt;"><strong>Catatan:</strong> ${Security.escapeHtml(record.notes)}</div>` : ''}
+            ${visibleSigs.length ? `<div class="grid ${sigGridCols} gap-2 mt-1">${sigHtml}</div>` : ''}
+            <div class="flex-1"></div>
+            ${a4.showFooterNote && a4.footerNote ? `
+              <div class="pt-1 border-t border-slate-300 flex items-center justify-between text-slate-500" style="font-size: 7pt;">
+                <span class="truncate">${Security.escapeHtml(a4.footerNote)}</span>
+                <span class="shrink-0 ml-2">Status: ${Security.escapeHtml(record.status || 'Diterima')}</span>
+              </div>
+            ` : ''}
+          </div>
+        `;
+      },
+
+      renderSheetHtml(record, cfg, overridePrintMode = null) {
+        const a4 = cfg.a4;
+        const activeMode = overridePrintMode || a4.printMode || 'a4_single';
+
+        if (activeMode === 'a5_duplex') {
+          const cutLineHtml = a4.showCutLine
+            ? `<div class="a5-cut-line"><span class="a5-cut-label">&#9986; Gunting / Potong di Garis Ini (Format 2 Rangkap A5 dalam 1 Lembar A4)</span></div>`
+            : `<div style="height: 4mm;"></div>`;
+
+          return `
+            <div class="a4-sheet a4-sheet-duplex">
+              ${this.renderA5HalfHtml(record, cfg, a4.copy1Label || 'RANGKAP 1 — ARSIP INSTANSI')}
+              ${cutLineHtml}
+              ${this.renderA5HalfHtml(record, cfg, a4.copy2Label || 'RANGKAP 2 — PENERIMA / PENGIRIM')}
+            </div>
+          `;
+        }
+
+        const margin = Math.min(30, Math.max(8, Number(a4.marginMm) || 15));
+        const fontSize = Math.min(14, Math.max(9, Number(a4.fontSizePt) || 11));
+        const fontClass = a4.fontFamily === 'sans' ? 'font-sans' : 'font-serif';
+
+        const visibleMeta = cfg.metaFields.filter((f) => f.visible);
+        const visibleCols = cfg.tableColumns.filter((c) => c.visible);
+        const visibleSigs = cfg.signatures.filter((s) => s.visible);
+        const items = Array.isArray(record.items) && record.items.length ? record.items : [{}];
+
+        const metaRowsHtml = visibleMeta.map((field) => {
+          let rawVal = (record.meta && record.meta[field.id]) || '';
+          if (field.type === 'date' && rawVal) rawVal = Format.indoDate(rawVal, true);
+          return `
+            <tr>
+              <td style="width: 32%; padding: 2.5px 6px 2.5px 0; vertical-align: top;">${Security.escapeHtml(field.label)}</td>
+              <td style="width: 3%; padding: 2.5px 4px; vertical-align: top;">:</td>
+              <td style="width: 65%; padding: 2.5px 0; vertical-align: top; font-weight: 500;">${Security.escapeHtml(rawVal || '-')}</td>
+            </tr>
+          `;
+        }).join('');
+
+        const thRowNumber = a4.showRowNumber ? `<th style="width: 6%;">No</th>` : '';
+        const thCols = visibleCols.map((col) => `
+          <th style="width: ${Security.escapeHtml(col.width || 'auto')};">${Security.escapeHtml(col.label)}</th>
+        `).join('');
+
+        const bodyRows = items.map((item, idx) => {
+          const tdNo = a4.showRowNumber ? `<td style="text-align: center;">${idx + 1}</td>` : '';
+          const tdCols = visibleCols.map((col) => `<td style="text-align: ${col.align || 'left'};">${Security.escapeHtml(item[col.id] || '')}</td>`).join('');
+          return `<tr>${tdNo}${tdCols}</tr>`;
+        }).join('');
+
+        const sigGridCols = visibleSigs.length === 1 ? 'grid-cols-1' : visibleSigs.length === 2 ? 'grid-cols-2' : 'grid-cols-3';
+        const dateLabel = record.meta && record.meta.tanggal ? Format.indoDate(record.meta.tanggal, false) : Format.indoDate(Format.todayISO(), false);
+
+        const sigHtml = visibleSigs.map((sig, i) => {
+          const customSig = (record.signatures && record.signatures[sig.id]) || {};
+          const boundVal = sig.bindMetaField && record.meta ? record.meta[sig.bindMetaField] : '';
+          const displayName = customSig.name || boundVal || sig.defaultName || '........................................';
+          const displayId = customSig.identity || sig.defaultIdentity || '';
+          const showCityDate = i === visibleSigs.length - 1;
+
+          return `
+            <div class="text-center flex flex-col justify-between px-2">
+              <div>
+                <div style="min-height: 18px; font-size: ${Math.max(9, fontSize - 0.5)}pt;">
+                  ${showCityDate ? `${Security.escapeHtml(a4.city || 'Surabaya')}, ${Security.escapeHtml(dateLabel)}` : '&nbsp;'}
+                </div>
+                <div class="font-semibold mt-0.5">${Security.escapeHtml(sig.roleLabel)}</div>
+                ${sig.subLabel ? `<div style="font-size: ${Math.max(8.5, fontSize - 1.5)}pt; color: #334155;">${Security.escapeHtml(sig.subLabel)}</div>` : ''}
+              </div>
+              <div style="height: 22mm;"></div>
+              <div>
+                <div class="font-bold underline underline-offset-4">${Security.escapeHtml(displayName)}</div>
+                ${displayId ? `<div style="font-size: ${Math.max(8.5, fontSize - 1.5)}pt; margin-top: 2px;">${Security.escapeHtml(displayId)}</div>` : ''}
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        return `
+          <div class="a4-sheet ${fontClass}" style="padding: ${margin}mm; font-size: ${fontSize}pt;">
+            ${this.renderKopHtml(cfg.kop, false)}
+            <div class="text-center mb-4">
+              <div class="font-bold uppercase tracking-wider underline underline-offset-4" style="font-size: ${fontSize + 2.5}pt;">
+                ${Security.escapeHtml(a4.docTitle || 'TANDA TERIMA SURAT / BERKAS')}
+              </div>
+              ${a4.docSubtitle ? `<div style="font-size: ${fontSize - 0.5}pt; margin-top: 2px;">${Security.escapeHtml(a4.docSubtitle)}</div>` : ''}
+              ${a4.showDocNumberUnderTitle ? `<div style="font-size: ${fontSize}pt; margin-top: 3px;">Nomor: <strong>${Security.escapeHtml(record.nomor || '-')}</strong></div>` : ''}
+            </div>
+            ${a4.introText ? `<p class="mb-3 text-justify">${Security.escapeHtml(a4.introText)}</p>` : ''}
+            ${visibleMeta.length ? `<table class="w-full mb-4" style="border-collapse: collapse;"><tbody>${metaRowsHtml}</tbody></table>` : ''}
+            <div class="mb-4">
+              <table class="a4-table" style="font-size: ${Math.max(9, fontSize - 0.5)}pt;">
+                <thead><tr>${thRowNumber}${thCols}</tr></thead>
+                <tbody>${bodyRows}</tbody>
+              </table>
+            </div>
+            ${record.notes ? `
+              <div class="mb-4 p-2.5 border border-slate-400 rounded-xs" style="font-size: ${Math.max(9, fontSize - 1)}pt;">
+                <strong>Catatan Tambahan:</strong><br/>
+                <span class="whitespace-pre-line">${Security.escapeHtml(record.notes)}</span>
+              </div>
+            ` : ''}
+            ${a4.closingText ? `<p class="mb-6 text-justify">${Security.escapeHtml(a4.closingText)}</p>` : ''}
+            ${visibleSigs.length ? `<div class="grid ${sigGridCols} gap-4 mt-2">${sigHtml}</div>` : ''}
+            <div class="flex-1"></div>
+            ${a4.showFooterNote && a4.footerNote ? `
+              <div class="mt-6 pt-2 border-t border-slate-300 flex items-center justify-between text-slate-500" style="font-size: 8pt;">
+                <span>${Security.escapeHtml(a4.footerNote)}</span>
+                <span>Status: ${Security.escapeHtml(record.status || 'Diterima')}</span>
+              </div>
+            ` : ''}
+          </div>
+        `;
+      },
+
+      fitPreviewToContainer(wrapperId) {
+        const wrapper = document.getElementById(wrapperId);
+        if (!wrapper) return;
+        const sheet = wrapper.querySelector('.a4-sheet');
+        if (!sheet) return;
+        const containerWidth = wrapper.clientWidth;
+        if (!containerWidth) return;
+        const a4WidthPx = 793.7;
+        const a4HeightPx = 1122.5;
+        const scale = Math.min(1, (containerWidth - 4) / a4WidthPx);
+        sheet.style.transform = `scale(${scale})`;
+        wrapper.style.height = `${Math.ceil(Math.max(sheet.scrollHeight, a4HeightPx) * scale) + 16}px`;
+      },
+
+      printRecord(record, overridePrintMode = null) {
+        if (!Auth.can('record.print')) {
+          UI.toast('Akses ditolak: Anda tidak memiliki izin mencetak dokumen.', 'error');
+          return;
+        }
+        const cfg = DataService.getConfig();
+        const portal = document.getElementById('print-portal');
+        portal.innerHTML = this.renderSheetHtml(record, cfg, overridePrintMode);
+        const imgs = portal.querySelectorAll('img');
+        const waitImages = Array.from(imgs).map((img) => {
+          if (img.complete) return Promise.resolve();
+          return new Promise((res) => {
+            img.onload = res;
+            img.onerror = res;
+          });
+        });
+        Promise.all(waitImages).then(() => {
+          setTimeout(() => window.print(), 80);
+        });
+      }
+    };
+
+    /* ============================================================
+       8. MAIN APPLICATION CONTROLLER
+       ============================================================ */
+    const App = {
+      state: {
+        activeMenuId: 'dashboard',
+        editorDraft: null,
+        editingRecordId: null,
+        mobileEditorTab: 'form',
+        archiveFilter: {
+          search: '',
+          status: 'ALL',
+          page: 1,
+          pageSize: 8
+        },
+        dynamicSettingsTab: 'menus',
+        usersCache: null,
+        usersLoading: false,
+        usersError: ''
+      },
+
+      init() {
+        window.addEventListener('resize', () => {
+          A4Renderer.fitPreviewToContainer('editor-a4-wrapper');
+          A4Renderer.fitPreviewToContainer('kop-a4-wrapper');
+          A4Renderer.fitPreviewToContainer('modal-a4-wrapper');
+        });
+
+        if (!Auth.isAuthenticated()) {
+          this.showAuthScreen();
+          return;
+        }
+        this.bootAuthenticatedApp();
+      },
+
+      showAuthScreen(notice = '') {
+        const authEl = document.getElementById('auth-screen');
+        const shellEl = document.getElementById('app-shell');
+        if (shellEl) {
+          shellEl.classList.add('hidden');
+          shellEl.classList.remove('flex');
+        }
+        if (authEl) {
+          authEl.classList.remove('hidden');
+          authEl.classList.add('flex');
+          this.renderAuthScreen(authEl, notice);
+          lucide.createIcons({ nodes: [authEl] });
+        }
+      },
+
+      bootAuthenticatedApp() {
+        const authEl = document.getElementById('auth-screen');
+        const shellEl = document.getElementById('app-shell');
+        if (authEl) {
+          authEl.classList.add('hidden');
+          authEl.classList.remove('flex');
+        }
+        if (shellEl) {
+          shellEl.classList.remove('hidden');
+          shellEl.classList.add('flex');
+        }
+
+        this.renderSidebar();
+        this.renderUserBadge();
+        this.updateStorageBadge();
+
+        const cfg = DataService.getConfig();
+        const firstAllowed = [...cfg.menus]
+          .filter((m) => m.visible && Auth.canAccessMenu(m))
+          .sort((a, b) => (a.order || 0) - (b.order || 0))[0];
+
+        this.navigateTo(firstAllowed ? firstAllowed.id : 'dashboard');
+      },
+
+      renderAuthScreen(container, notice = '') {
+        const cfg = DataService.getConfig();
+        const isGasMode = Boolean(cfg.gas.enabled && cfg.gas.endpointUrl);
+        const needsLocalSetup = !isGasMode && !Auth.hasLocalUsers();
+
+        container.innerHTML = `
+          <div class="w-full max-w-md bg-white rounded-3xl shadow-2xl border border-slate-200/80 overflow-hidden">
+            <div class="p-6 bg-gradient-to-br from-indigo-600 to-slate-900 text-white">
+              <div class="flex items-center gap-3">
+                <div class="w-11 h-11 rounded-2xl bg-white/15 backdrop-blur-xs flex items-center justify-center shrink-0">
+                  <i data-lucide="shield-check" class="w-6 h-6"></i>
+                </div>
+                <div class="min-w-0">
+                  <h1 class="text-lg font-bold truncate">${Security.escapeHtml(cfg.appInfo.name || 'Tanda Terima A4')}</h1>
+                  <p class="text-xs text-indigo-200 truncate">Portal Autentikasi Superadmin &amp; Operator</p>
+                </div>
+              </div>
+              <div class="mt-4 flex items-center justify-between text-[11px] bg-white/10 rounded-xl px-3 py-2">
+                <span class="text-indigo-100">Mode Autentikasi:</span>
+                <span class="font-bold text-white">${isGasMode ? 'Online (GAS + Spreadsheet)' : 'Lokal Browser (Offline/Preview)'}</span>
+              </div>
+            </div>
+
+            <div class="p-6 space-y-4">
+              ${notice ? `
+                <div class="p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs font-medium flex items-center gap-2">
+                  <i data-lucide="info" class="w-4 h-4 shrink-0"></i>
+                  <span>${Security.escapeHtml(notice)}</span>
+                </div>
+              ` : ''}
+
+              ${needsLocalSetup ? `
+                <div class="space-y-1">
+                  <h2 class="text-base font-bold text-slate-900">Aktivasi Superadmin Pertama</h2>
+                  <p class="text-xs text-slate-500">Buat akun Superadmin untuk mulai menggunakan mode lokal. Setelah masuk, Anda dapat menambah akun Operator beserta hak aksesnya.</p>
+                </div>
+                <form onsubmit="App.handleFirstSuperadminSubmit(event)" class="space-y-3">
+                  <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Nama Lengkap</label>
+                    <input type="text" id="setup-fullname" required placeholder="Contoh: Kepala Bagian Umum" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100" />
+                  </div>
+                  <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Username Superadmin</label>
+                    <input type="text" id="setup-username" required value="superadmin" pattern="[a-z0-9._-]{3,32}" placeholder="superadmin" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100" />
+                  </div>
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <div>
+                      <label class="block text-xs font-semibold text-slate-700 mb-1">Kata Sandi</label>
+                      <input type="password" id="setup-password" required minlength="6" placeholder="Min. 6 karakter" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-indigo-500" />
+                    </div>
+                    <div>
+                      <label class="block text-xs font-semibold text-slate-700 mb-1">Ulangi Sandi</label>
+                      <input type="password" id="setup-password2" required minlength="6" placeholder="Konfirmasi sandi" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-indigo-500" />
+                    </div>
+                  </div>
+                  <button type="submit" id="auth-submit-btn" class="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold shadow-md transition">
+                    Buat Akun Superadmin &amp; Masuk
+                  </button>
+                </form>
+              ` : `
+                <div class="space-y-1">
+                  <h2 class="text-base font-bold text-slate-900">Masuk ke Aplikasi</h2>
+                  <p class="text-xs text-slate-500">Gunakan akun Superadmin atau Operator Anda.</p>
+                </div>
+                <form onsubmit="App.handleLoginSubmit(event)" class="space-y-3">
+                  <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Username</label>
+                    <input type="text" id="login-username" required autocomplete="username" placeholder="Masukkan username" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100" />
+                  </div>
+                  <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Kata Sandi</label>
+                    <input type="password" id="login-password" required autocomplete="current-password" placeholder="Masukkan kata sandi" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100" />
+                  </div>
+                  <button type="submit" id="auth-submit-btn" class="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold shadow-md transition">
+                    Masuk
+                  </button>
+                </form>
+              `}
+
+              <details class="pt-3 border-t border-slate-100" ${isGasMode ? 'open' : ''}>
+                <summary class="text-xs font-semibold text-slate-600 cursor-pointer flex items-center justify-between list-none">
+                  <span class="flex items-center gap-1.5"><i data-lucide="cloud" class="w-3.5 h-3.5 text-indigo-600"></i> Koneksi Server Backend GAS (Spreadsheet)</span>
+                  <span class="text-[11px] text-indigo-600">Atur</span>
+                </summary>
+                <div class="mt-3 space-y-2.5 p-3 rounded-xl bg-slate-50 border border-slate-200">
+                  <label class="inline-flex items-center gap-2 text-xs font-medium text-slate-700 cursor-pointer">
+                    <input type="checkbox" id="auth-gas-enabled" ${cfg.gas.enabled ? 'checked' : ''} class="accent-indigo-600 w-4 h-4" />
+                    Login menggunakan Backend GAS &amp; Sheet TT_USERS
+                  </label>
+                  <input type="url" id="auth-gas-url" value="${Security.escapeHtml(cfg.gas.endpointUrl || '')}" placeholder="https://script.google.com/macros/s/.../exec" class="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-xs font-mono outline-none focus:border-indigo-500" />
+                  <button type="button" onclick="App.saveAuthGasServer()" class="w-full py-1.5 rounded-lg bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold transition">
+                    Simpan Mode Server
+                  </button>
+                </div>
+              </details>
+            </div>
+          </div>
+        `;
+      },
+
+      saveAuthGasServer() {
+        const enabled = Boolean(document.getElementById('auth-gas-enabled')?.checked);
+        const url = (document.getElementById('auth-gas-url')?.value || '').trim();
+        if (enabled && !url.startsWith('https://')) {
+          UI.toast('Masukkan URL Web App GAS yang valid (https://...).', 'warning');
+          return;
+        }
+        const cfg = DataService.getConfig();
+        cfg.gas.enabled = enabled;
+        cfg.gas.endpointUrl = url;
+        DataService.saveConfig(cfg);
+        UI.toast(enabled ? 'Mode login Backend GAS diaktifkan.' : 'Beralih ke Mode Lokal Browser.', 'info');
+        this.showAuthScreen();
+      },
+
+      async handleFirstSuperadminSubmit(ev) {
+        ev.preventDefault();
+        const fullName = document.getElementById('setup-fullname').value.trim();
+        const username = document.getElementById('setup-username').value.trim();
+        const pwd = document.getElementById('setup-password').value;
+        const pwd2 = document.getElementById('setup-password2').value;
+        if (pwd !== pwd2) {
+          UI.toast('Konfirmasi kata sandi tidak cocok.', 'warning');
+          return;
+        }
+        const res = await Auth.setupFirstLocalSuperadmin({ username, fullName, password: pwd });
+        if (!res.ok) {
+          UI.toast(res.error, 'error');
+          return;
+        }
+        UI.toast(`Selamat datang, ${res.user.fullName} (Superadmin)!`, 'success');
+        this.bootAuthenticatedApp();
+      },
+
+      async handleLoginSubmit(ev) {
+        ev.preventDefault();
+        const username = document.getElementById('login-username').value.trim();
+        const password = document.getElementById('login-password').value;
+        const btn = document.getElementById('auth-submit-btn');
+        if (btn) {
+          btn.disabled = true;
+          btn.textContent = 'Memverifikasi...';
+        }
+        try {
+          const cfg = DataService.getConfig();
+          const isGasMode = Boolean(cfg.gas.enabled && cfg.gas.endpointUrl);
+          const res = isGasMode
+            ? await DataService.gasLogin(username, password)
+            : await Auth.loginLocal(username, password);
+
+          if (!res.ok) {
+            UI.toast(res.error || 'Gagal login.', 'error');
+            return;
+          }
+
+          if (isGasMode) {
+            UI.toast('Login berhasil. Memuat data dari Spreadsheet...', 'info');
+            await DataService.bootstrapFromGas();
+          }
+          UI.toast(`Selamat datang, ${res.user.fullName} (${res.user.role.toUpperCase()}).`, 'success');
+          this.bootAuthenticatedApp();
+        } finally {
+          if (btn) {
+            btn.disabled = false;
+            btn.textContent = 'Masuk';
+          }
+        }
+      },
+
+      handleLogout() {
+        UI.confirm({
+          title: 'Keluar dari Aplikasi?',
+          message: 'Sesi login Anda akan diakhiri dengan aman.',
+          confirmText: 'Ya, Keluar',
+          onConfirm: async () => {
+            await DataService.gasLogout();
+            this.state.usersCache = null;
+            this.state.editorDraft = null;
+            this.showAuthScreen('Anda telah keluar dari sesi.');
+            UI.toast('Berhasil keluar.', 'info');
+          }
+        });
+      },
+
+      renderUserBadge() {
+        const user = Auth.getCurrentUser();
+        const card = document.getElementById('sidebar-user-card');
+        const pill = document.getElementById('topbar-role-pill');
+        const createBtn = document.getElementById('topbar-create-btn');
+        const settingsBtn = document.getElementById('topbar-settings-btn');
+        if (!user) return;
+
+        const isSuper = user.role === ROLES.SUPERADMIN;
+        const initials = (user.fullName || user.username || 'U').slice(0, 2).toUpperCase();
+
+        if (card) {
+          card.innerHTML = `
+            <div class="w-9 h-9 rounded-xl ${isSuper ? 'bg-amber-500/20 text-amber-300 border border-amber-400/30' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-400/30'} flex items-center justify-center font-bold text-xs shrink-0">
+              ${Security.escapeHtml(initials)}
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="text-xs font-bold text-white truncate">${Security.escapeHtml(user.fullName || user.username)}</div>
+              <div class="flex items-center gap-1.5 mt-0.5">
+                <span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase ${isSuper ? 'bg-amber-500/25 text-amber-300' : 'bg-emerald-500/25 text-emerald-300'}">${Security.escapeHtml(user.role)}</span>
+                <span class="text-[10px] text-slate-400 truncate">@${Security.escapeHtml(user.username)}</span>
+              </div>
+            </div>
+          `;
+        }
+
+        if (pill) {
+          pill.className = `hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border ${
+            isSuper ? 'bg-amber-50 text-amber-800 border-amber-200' : 'bg-emerald-50 text-emerald-800 border-emerald-200'
+          }`;
+          pill.innerHTML = `<span class="w-1.5 h-1.5 rounded-full ${isSuper ? 'bg-amber-500' : 'bg-emerald-500'}"></span> ${isSuper ? 'SUPERADMIN' : 'OPERATOR'}`;
+        }
+
+        if (createBtn) createBtn.classList.toggle('hidden', !Auth.can('record.create'));
+        if (settingsBtn) settingsBtn.classList.toggle('hidden', !Auth.can('menu.manage'));
+      },
+
+      openChangePasswordModal() {
+        UI.openCustomModal(`
+          <div class="px-5 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+            <h3 class="font-bold text-slate-900 text-sm">Ganti Kata Sandi Akun Saya</h3>
+            <button type="button" onclick="UI.closeModal()" class="p-1 rounded-lg text-slate-500 hover:bg-slate-200"><i data-lucide="x" class="w-4 h-4"></i></button>
+          </div>
+          <form onsubmit="App.submitChangePassword(event)" class="p-5 space-y-3">
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Kata Sandi Lama</label>
+              <input type="password" id="cp-old" required class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm outline-none focus:border-indigo-500" />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Kata Sandi Baru (min. 6 karakter)</label>
+              <input type="password" id="cp-new" required minlength="6" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm outline-none focus:border-indigo-500" />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Konfirmasi Sandi Baru</label>
+              <input type="password" id="cp-new2" required minlength="6" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm outline-none focus:border-indigo-500" />
+            </div>
+            <div class="pt-2 flex justify-end gap-2">
+              <button type="button" onclick="UI.closeModal()" class="px-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600">Batal</button>
+              <button type="submit" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold">Simpan Sandi</button>
+            </div>
+          </form>
+        `, 'max-w-md');
+      },
+
+      async submitChangePassword(ev) {
+        ev.preventDefault();
+        const oldPwd = document.getElementById('cp-old').value;
+        const newPwd = document.getElementById('cp-new').value;
+        const newPwd2 = document.getElementById('cp-new2').value;
+        if (newPwd !== newPwd2) {
+          UI.toast('Konfirmasi kata sandi baru tidak cocok.', 'warning');
+          return;
+        }
+        const cfg = DataService.getConfig();
+        const isGasMode = Boolean(cfg.gas.enabled && cfg.gas.endpointUrl);
+        const res = isGasMode
+          ? await DataService.gasChangeOwnPassword(oldPwd, newPwd)
+          : await Auth.changeLocalOwnPassword(oldPwd, newPwd);
+        if (!res.ok) {
+          UI.toast(res.error || 'Gagal mengganti kata sandi.', 'error');
+          return;
+        }
+        UI.closeModal();
+        UI.toast('Kata sandi berhasil diperbarui.', 'success');
+      },
+
+      toggleSidebar(open) {
+        const sidebar = document.getElementById('app-sidebar');
+        const backdrop = document.getElementById('sidebar-backdrop');
+        if (!sidebar || !backdrop) return;
+        if (open) {
+          sidebar.classList.remove('-translate-x-full');
+          backdrop.classList.remove('hidden');
+        } else {
+          sidebar.classList.add('-translate-x-full');
+          backdrop.classList.add('hidden');
+        }
+      },
+
+      updateStorageBadge() {
+        const cfg = DataService.getConfig();
+        const badge = document.getElementById('sidebar-storage-badge');
+        const fmtBadge = document.getElementById('sidebar-format-badge');
+        const nameEl = document.getElementById('sidebar-app-name');
+        const subEl = document.getElementById('sidebar-app-subtitle');
+        if (nameEl) nameEl.textContent = cfg.appInfo.name || 'Tanda Terima A4';
+        if (subEl) subEl.textContent = cfg.appInfo.subtitle || 'Sistem Administrasi Berkas';
+        if (fmtBadge) {
+          fmtBadge.textContent = cfg.a4.printMode === 'a5_duplex' ? '2×A5 (1 Lembar A4)' : 'A4 Penuh (210×297)';
+        }
+        if (!badge) return;
+
+        if (cfg.gas.enabled && cfg.gas.endpointUrl) {
+          badge.className = 'inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-medium bg-indigo-500/20 text-indigo-300 border border-indigo-500/30';
+          badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-indigo-400"></span> GAS + Sheet/Drive`;
+        } else {
+          badge.className = 'inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-500/15 text-emerald-300 border border-emerald-500/20';
+          badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Lokal Aman`;
+        }
+      },
+
+      renderSidebar() {
+        const cfg = DataService.getConfig();
+        const nav = document.getElementById('dynamic-nav-list');
+        if (!nav) return;
+
+        const visibleMenus = [...cfg.menus]
+          .filter((m) => m.visible && Auth.canAccessMenu(m))
+          .sort((a, b) => (a.order || 0) - (b.order || 0));
+
+        const recordCount = DataService.getRecords().length;
+
+        nav.innerHTML = visibleMenus.map((menu) => {
+          const isActive = this.state.activeMenuId === menu.id;
+          const badgeHtml = menu.id === 'archive'
+            ? `<span class="ml-auto px-2 py-0.5 text-[10px] font-bold rounded-full ${isActive ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-300'}">${recordCount}</span>`
+            : menu.type !== 'builtin'
+              ? `<span class="ml-auto px-1.5 py-0.5 text-[10px] rounded bg-indigo-500/20 text-indigo-300">Kustom</span>`
+              : '';
+
+          return `
+            <button
+              type="button"
+              onclick="App.navigateTo('${Security.escapeHtml(menu.id)}')"
+              class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all text-left ${
+                isActive
+                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-950/30'
+                  : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
+              }"
+            >
+              <i data-lucide="${Security.escapeHtml(menu.icon || 'circle')}" class="w-4 h-4 shrink-0"></i>
+              <span class="truncate">${Security.escapeHtml(menu.label)}</span>
+              ${badgeHtml}
+            </button>
+          `;
+        }).join('');
+
+        lucide.createIcons({ nodes: [nav] });
+      },
+
+      navigateTo(menuId, options = {}) {
+        if (!Auth.isAuthenticated()) {
+          this.showAuthScreen();
+          return;
+        }
+        const cfg = DataService.getConfig();
+        let targetMenu = cfg.menus.find((m) => m.id === menuId);
+        if (!targetMenu) {
+          targetMenu = cfg.menus.find((m) => m.visible && Auth.canAccessMenu(m)) || cfg.menus[0];
+          menuId = targetMenu.id;
+        }
+
+        this.state.activeMenuId = menuId;
+        this.toggleSidebar(false);
+        this.renderSidebar();
+        this.renderUserBadge();
+
+        document.getElementById('topbar-title').textContent = targetMenu.label;
+        document.getElementById('topbar-desc').textContent = targetMenu.description || '';
+
+        const main = document.getElementById('main-view');
+
+        if (!Auth.canAccessMenu(targetMenu)) {
+          main.innerHTML = `
+            <div class="bg-white rounded-2xl p-10 border border-rose-200 text-center max-w-lg mx-auto mt-8 shadow-xs">
+              <div class="w-14 h-14 rounded-2xl bg-rose-50 text-rose-600 mx-auto flex items-center justify-center mb-3">
+                <i data-lucide="shield-alert" class="w-7 h-7"></i>
+              </div>
+              <h3 class="text-lg font-bold text-slate-900">Akses Ditolak (403)</h3>
+              <p class="text-sm text-slate-600 mt-1">Akun Anda tidak memiliki hak akses untuk membuka menu <strong>${Security.escapeHtml(targetMenu.label)}</strong>. Hubungi Superadmin jika Anda memerlukan izin ini.</p>
+            </div>
+          `;
+          lucide.createIcons({ nodes: [main] });
+          return;
+        }
+
+        if (menuId === 'dashboard') {
+          this.renderDashboardView(main);
+        } else if (menuId === 'create') {
+          if (options.resetDraft || !this.state.editorDraft) {
+            this.initNewDraft();
+          }
+          this.renderEditorView(main);
+        } else if (menuId === 'archive') {
+          this.renderArchiveView(main, options.presetStatus || null);
+        } else if (menuId === 'kop') {
+          this.renderKopA4View(main);
+        } else if (menuId === 'menus') {
+          this.renderDynamicSettingsView(main);
+        } else if (menuId === 'users') {
+          this.renderUsersView(main);
+        } else if (menuId === 'integration') {
+          this.renderIntegrationView(main);
+        } else if (targetMenu.type === 'custom_filter') {
+          this.renderArchiveView(main, targetMenu.filterStatus || 'ALL', targetMenu);
+        } else if (targetMenu.type === 'custom_page') {
+          this.renderCustomPageView(main, targetMenu);
+        } else {
+          this.renderDashboardView(main);
+        }
+
+        lucide.createIcons({ nodes: [main] });
+      },
+
+      /* ------------------------------------------------------------
+         VIEW 1: DASHBOARD (EMPTY-STATE FIRST)
+         ------------------------------------------------------------ */
+      renderDashboardView(container) {
+        const records = DataService.getRecords();
+        const cfg = DataService.getConfig();
+        const total = records.length;
+        const diterima = records.filter((r) => r.status === 'Diterima').length;
+        const diproses = records.filter((r) => r.status === 'Diproses').length;
+        const hasKopImg = Boolean(Security.sanitizeImageSrc(cfg.kop.imageSrc));
+        const canCreate = Auth.can('record.create');
+        const canEdit = Auth.can('record.edit');
+        const canPrint = Auth.can('record.print');
+        const canKop = Auth.can('kop.manage');
+
+        const recentRows = records.slice(0, 5).map((r) => `
+          <tr class="hover:bg-slate-50/80 transition">
+            <td class="px-4 py-3 text-sm font-semibold text-slate-900 whitespace-nowrap">${Security.escapeHtml(r.nomor)}</td>
+            <td class="px-4 py-3 text-sm text-slate-600 whitespace-nowrap">${Security.escapeHtml(Format.indoDate(r.meta && r.meta.tanggal))}</td>
+            <td class="px-4 py-3 text-sm text-slate-700">${Security.escapeHtml((r.meta && r.meta.pengirim) || '-')}</td>
+            <td class="px-4 py-3 text-sm text-slate-700">${Security.escapeHtml((r.meta && r.meta.penerima) || '-')}</td>
+            <td class="px-4 py-3 text-sm">${Format.statusBadge(r.status)}</td>
+            <td class="px-4 py-3 text-right whitespace-nowrap space-x-1">
+              <button type="button" onclick="App.previewRecordModal('${r.id}')" class="p-1.5 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-indigo-600" title="Pratinjau A4">
+                <i data-lucide="eye" class="w-4 h-4"></i>
+              </button>
+              ${canPrint ? `
+                <button type="button" onclick="App.printById('${r.id}')" class="p-1.5 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-emerald-600" title="Cetak A4">
+                  <i data-lucide="printer" class="w-4 h-4"></i>
+                </button>
+              ` : ''}
+              ${canEdit ? `
+                <button type="button" onclick="App.editRecord('${r.id}')" class="p-1.5 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-amber-600" title="Edit">
+                  <i data-lucide="pencil" class="w-4 h-4"></i>
+                </button>
+              ` : ''}
+            </td>
+          </tr>
+        `).join('');
+
+        container.innerHTML = `
+          <div class="space-y-6">
+            <!-- Hero Banner -->
+            <div class="bg-gradient-to-br from-indigo-600 via-indigo-700 to-slate-900 rounded-2xl p-6 text-white shadow-lg flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div class="space-y-1.5">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 text-xs font-medium backdrop-blur-xs">
+                  <i data-lucide="sparkles" class="w-3.5 h-3.5"></i> Format A4 &amp; 2×A5 &bull; Role: ${Security.escapeHtml((Auth.getCurrentUser()?.role || '').toUpperCase())}
+                </div>
+                <h3 class="text-xl sm:text-2xl font-bold tracking-tight">Kelola Tanda Terima Surat &amp; Berkas</h3>
+                <p class="text-indigo-100 text-sm max-w-2xl">
+                  Unggah gambar Kop Header instansi Anda, sesuaikan kolom berkas dan menu navigasi secara dinamis, lalu cetak langsung dalam format 1 lembar A4 atau 2 rangkap A5.
+                </p>
+              </div>
+              <div class="flex flex-wrap items-center gap-2.5 shrink-0">
+                ${canCreate ? `
+                  <button type="button" onclick="App.navigateTo('create', { resetDraft: true })" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white text-indigo-700 font-semibold text-sm hover:bg-indigo-50 shadow-sm transition active:scale-95">
+                    <i data-lucide="file-plus-2" class="w-4 h-4"></i> Buat Tanda Terima
+                  </button>
+                ` : ''}
+                ${canKop ? `
+                  <button type="button" onclick="App.navigateTo('kop')" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/15 hover:bg-white/25 text-white font-medium text-sm border border-white/20 transition">
+                    <i data-lucide="image" class="w-4 h-4"></i> Atur Kop Gambar
+                  </button>
+                ` : ''}
+              </div>
+            </div>
+
+            <!-- KPI Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs">
+                <div class="flex items-center justify-between text-slate-500 text-xs font-semibold uppercase">
+                  <span>Total Tanda Terima</span>
+                  <i data-lucide="files" class="w-4 h-4 text-indigo-600"></i>
+                </div>
+                <div class="text-2xl font-bold text-slate-900 mt-2">${total}</div>
+                <p class="text-xs text-slate-400 mt-1">Tersimpan di arsip aktif</p>
+              </div>
+              <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs">
+                <div class="flex items-center justify-between text-slate-500 text-xs font-semibold uppercase">
+                  <span>Status Diterima</span>
+                  <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-600"></i>
+                </div>
+                <div class="text-2xl font-bold text-emerald-700 mt-2">${diterima}</div>
+                <p class="text-xs text-slate-400 mt-1">Berkas telah diterima</p>
+              </div>
+              <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs">
+                <div class="flex items-center justify-between text-slate-500 text-xs font-semibold uppercase">
+                  <span>Sedang Diproses</span>
+                  <i data-lucide="clock" class="w-4 h-4 text-amber-500"></i>
+                </div>
+                <div class="text-2xl font-bold text-amber-600 mt-2">${diproses}</div>
+                <p class="text-xs text-slate-400 mt-1">Menunggu tindak lanjut</p>
+              </div>
+              <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs">
+                <div class="flex items-center justify-between text-slate-500 text-xs font-semibold uppercase">
+                  <span>Kop Header</span>
+                  <i data-lucide="image" class="w-4 h-4 text-indigo-600"></i>
+                </div>
+                <div class="text-base font-bold text-slate-900 mt-3">${hasKopImg ? 'Aktif (Gambar)' : (cfg.kop.mode === 'text' ? 'Mode Teks' : 'Belum Diunggah')}</div>
+                ${canKop ? `<button type="button" onclick="App.navigateTo('kop')" class="text-xs text-indigo-600 hover:underline font-medium mt-1">Ubah pengaturan kop &rarr;</button>` : `<p class="text-xs text-slate-400 mt-1">Diatur oleh Superadmin</p>`}
+              </div>
+            </div>
+
+            <!-- Recent Records / Empty State -->
+            <div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+              <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+                <div>
+                  <h4 class="font-bold text-slate-900 text-sm sm:text-base">Tanda Terima Terbaru</h4>
+                  <p class="text-xs text-slate-500">5 transaksi berkas terakhir yang tercatat</p>
+                </div>
+                <button type="button" onclick="App.navigateTo('archive')" class="text-xs font-semibold text-indigo-600 hover:underline">Lihat Semua Arsip &rarr;</button>
+              </div>
+              ${total === 0 ? `
+                <div class="p-10 text-center flex flex-col items-center justify-center">
+                  <div class="w-14 h-14 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-3">
+                    <i data-lucide="file-plus-2" class="w-7 h-7"></i>
+                  </div>
+                  <h5 class="font-bold text-slate-800 text-base">Belum Ada Tanda Terima Berkas</h5>
+                  <p class="text-sm text-slate-500 max-w-md mt-1">Database masih kosong. Mulai dengan membuat tanda terima surat/berkas pertama Anda.</p>
+                  ${canCreate ? `
+                    <button type="button" onclick="App.navigateTo('create', { resetDraft: true })" class="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-semibold shadow-sm transition">
+                      <i data-lucide="plus" class="w-4 h-4"></i> Buat Tanda Terima Pertama
+                    </button>
+                  ` : ''}
+                </div>
+              ` : `
+                <div class="overflow-x-auto">
+                  <table class="w-full text-left border-collapse">
+                    <thead class="bg-slate-50 border-b border-slate-200/80 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                      <tr>
+                        <th class="px-4 py-3">Nomor</th>
+                        <th class="px-4 py-3">Tanggal</th>
+                        <th class="px-4 py-3">Yang Menyerahkan</th>
+                        <th class="px-4 py-3">Yang Menerima</th>
+                        <th class="px-4 py-3">Status</th>
+                        <th class="px-4 py-3 text-right">Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">${recentRows}</tbody>
+                  </table>
+                </div>
+              `}
+            </div>
+          </div>
+        `;
+      },
+
+      /* ------------------------------------------------------------
+         VIEW 2: EDITOR + LIVE A4 / 2xA5 PREVIEW
+         ------------------------------------------------------------ */
+      initNewDraft() {
+        const cfg = DataService.getConfig();
+        const meta = {};
+        cfg.metaFields.forEach((f) => {
+          meta[f.id] = f.type === 'date' ? Format.todayISO() : (f.defaultValue || '');
+        });
+        const firstRow = {};
+        cfg.tableColumns.forEach((c) => {
+          firstRow[c.id] = c.id === 'jumlah' ? '1' : c.id === 'satuan' ? 'Berkas' : '';
+        });
+        this.state.editingRecordId = null;
+        this.state.editorDraft = {
+          id: null,
+          nomor: DataService.generateNextNumber(),
+          status: 'Diterima',
+          meta,
+          items: [firstRow],
+          notes: '',
+          signatures: {}
+        };
+      },
+
+      renderEditorView(container) {
+        const cfg = DataService.getConfig();
+        if (!this.state.editorDraft) this.initNewDraft();
+        const draft = this.state.editorDraft;
+        const visibleMeta = cfg.metaFields.filter((f) => f.visible);
+        const visibleCols = cfg.tableColumns.filter((c) => c.visible);
+        const visibleSigs = cfg.signatures.filter((s) => s.visible);
+        const isFormTab = this.state.mobileEditorTab === 'form';
+        const canPrint = Auth.can('record.print');
+        const canKop = Auth.can('kop.manage');
+        const canMenu = Auth.can('menu.manage');
+
+        const metaInputsHtml = visibleMeta.map((field) => {
+          const val = (draft.meta && draft.meta[field.id]) || '';
+          return `
+            <div class="${field.id === 'perihal' ? 'sm:col-span-2' : ''}">
+              <label class="block text-xs font-semibold text-slate-700 mb-1">
+                ${Security.escapeHtml(field.label)} ${field.required ? '<span class="text-rose-500">*</span>' : ''}
+              </label>
+              <input
+                type="${field.type === 'date' ? 'date' : 'text'}"
+                value="${Security.escapeHtml(val)}"
+                placeholder="${Security.escapeHtml(field.placeholder || '')}"
+                oninput="App.updateDraftMeta('${Security.escapeHtml(field.id)}', this.value)"
+                class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white focus:border-indigo-500 outline-none text-sm"
+              />
+            </div>
+          `;
+        }).join('');
+
+        const itemCardsHtml = (draft.items || []).map((row, idx) => `
+          <div class="p-3.5 rounded-xl border border-slate-200 bg-slate-50/60 space-y-2.5">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-slate-700">Item Berkas #${idx + 1}</span>
+              ${draft.items.length > 1 ? `
+                <button type="button" onclick="App.removeDraftItem(${idx})" class="text-xs text-rose-600 hover:underline font-medium inline-flex items-center gap-1">
+                  <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Hapus
+                </button>
+              ` : ''}
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              ${visibleCols.map((col) => `
+                <div class="${col.id === 'namaBerkas' || col.id === 'keterangan' ? 'sm:col-span-2' : ''}">
+                  <label class="block text-[11px] font-medium text-slate-600 mb-1">${Security.escapeHtml(col.label)}</label>
+                  <input
+                    type="text"
+                    value="${Security.escapeHtml(row[col.id] || '')}"
+                    placeholder="${Security.escapeHtml(col.placeholder || '')}"
+                    oninput="App.updateDraftItem(${idx}, '${Security.escapeHtml(col.id)}', this.value)"
+                    class="w-full px-3 py-1.5 rounded-lg border border-slate-200 bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none text-sm"
+                  />
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        `).join('');
+
+        const sigOverrideHtml = visibleSigs.map((sig) => {
+          const custom = (draft.signatures && draft.signatures[sig.id]) || {};
+          return `
+            <div class="p-3 rounded-xl border border-slate-200 bg-slate-50/50 space-y-2">
+              <div class="text-xs font-bold text-slate-700">${Security.escapeHtml(sig.roleLabel)} <span class="font-normal text-slate-400">(${Security.escapeHtml(sig.subLabel || '-')})</span></div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <input
+                  type="text"
+                  value="${Security.escapeHtml(custom.name || '')}"
+                  placeholder="${sig.bindMetaField ? 'Otomatis dari field ' + sig.bindMetaField : 'Nama Penandatangan'}"
+                  oninput="App.updateDraftSignature('${Security.escapeHtml(sig.id)}', 'name', this.value)"
+                  class="px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs outline-none focus:border-indigo-500"
+                />
+                <input
+                  type="text"
+                  value="${Security.escapeHtml(custom.identity || '')}"
+                  placeholder="NIP / Jabatan (opsional)"
+                  oninput="App.updateDraftSignature('${Security.escapeHtml(sig.id)}', 'identity', this.value)"
+                  class="px-3 py-1.5 rounded-lg border border-slate-200 bg-white text-xs outline-none focus:border-indigo-500"
+                />
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        container.innerHTML = `
+          <div class="space-y-4">
+            <!-- Editor Action Bar -->
+            <div class="bg-white rounded-2xl p-3.5 border border-slate-200 shadow-xs flex flex-wrap items-center justify-between gap-3">
+              <div class="flex items-center gap-2">
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${this.state.editingRecordId ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-indigo-50 text-indigo-700 border border-indigo-200'}">
+                  <i data-lucide="${this.state.editingRecordId ? 'pencil' : 'file-plus-2'}" class="w-3.5 h-3.5"></i>
+                  ${this.state.editingRecordId ? 'Mode Edit Berkas' : 'Tanda Terima Baru'}
+                </span>
+                <div class="flex xl:hidden rounded-xl bg-slate-100 p-1">
+                  <button type="button" onclick="App.setMobileEditorTab('form')" class="px-3 py-1 rounded-lg text-xs font-semibold transition ${isFormTab ? 'bg-white text-indigo-700 shadow-xs' : 'text-slate-600'}">Form</button>
+                  <button type="button" onclick="App.setMobileEditorTab('preview')" class="px-3 py-1 rounded-lg text-xs font-semibold transition ${!isFormTab ? 'bg-white text-indigo-700 shadow-xs' : 'text-slate-600'}">Pratinjau A4</button>
+                </div>
+              </div>
+
+              <div class="flex flex-wrap items-center gap-2">
+                <button type="button" onclick="App.resetEditorDraft()" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 text-xs font-semibold transition">
+                  <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> Reset
+                </button>
+                <button type="button" onclick="App.saveCurrentDraft(false)" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-semibold shadow-sm transition active:scale-95">
+                  <i data-lucide="save" class="w-4 h-4"></i> Simpan Arsip
+                </button>
+                ${canPrint ? `
+                  <button type="button" onclick="App.saveCurrentDraft(true)" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-semibold shadow-sm transition active:scale-95">
+                    <i data-lucide="printer" class="w-4 h-4"></i> Simpan &amp; Cetak
+                  </button>
+                ` : ''}
+              </div>
+            </div>
+
+            <!-- Split Workspace -->
+            <div class="grid grid-cols-1 xl:grid-cols-12 gap-5 items-start">
+              <!-- FORM PANEL -->
+              <div class="xl:col-span-5 space-y-4 ${isFormTab ? 'block' : 'hidden xl:block'}">
+                <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs space-y-4">
+                  <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <h4 class="font-bold text-slate-900 text-sm flex items-center gap-2">
+                      <i data-lucide="file-text" class="w-4 h-4 text-indigo-600"></i> Identitas Dokumen
+                    </h4>
+                    <button type="button" onclick="App.regenerateDraftNumber()" class="text-xs text-indigo-600 hover:underline font-medium">Generate Nomor</button>
+                  </div>
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label class="block text-xs font-semibold text-slate-700 mb-1">Nomor Tanda Terima <span class="text-rose-500">*</span></label>
+                      <input type="text" value="${Security.escapeHtml(draft.nomor)}" oninput="App.updateDraftRoot('nomor', this.value)" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white focus:border-indigo-500 outline-none text-sm font-semibold" />
+                    </div>
+                    <div>
+                      <label class="block text-xs font-semibold text-slate-700 mb-1">Status Berkas</label>
+                      <select onchange="App.updateDraftRoot('status', this.value)" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white focus:border-indigo-500 outline-none text-sm">
+                        ${['Diterima', 'Diproses', 'Arsip', 'Revisi'].map((s) => `<option value="${s}" ${draft.status === s ? 'selected' : ''}>${s}</option>`).join('')}
+                      </select>
+                    </div>
+                  </div>
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                    ${metaInputsHtml}
+                  </div>
+                </div>
+
+                <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs space-y-3.5">
+                  <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <h4 class="font-bold text-slate-900 text-sm flex items-center gap-2">
+                      <i data-lucide="list-checks" class="w-4 h-4 text-indigo-600"></i> Daftar Surat / Berkas (${draft.items.length})
+                    </h4>
+                    <button type="button" onclick="App.addDraftItem()" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-semibold transition">
+                      <i data-lucide="plus" class="w-3.5 h-3.5"></i> Tambah Baris
+                    </button>
+                  </div>
+                  <div id="draft-items-container" class="space-y-3">
+                    ${itemCardsHtml}
+                  </div>
+                </div>
+
+                <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs space-y-4">
+                  <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Catatan Tambahan (Opsional)</label>
+                    <textarea rows="2" oninput="App.updateDraftRoot('notes', this.value)" placeholder="Contoh: Berkas diterima dalam amplop tertutup..." class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white focus:border-indigo-500 outline-none text-sm">${Security.escapeHtml(draft.notes || '')}</textarea>
+                  </div>
+                  <div class="space-y-2.5 pt-2 border-t border-slate-100">
+                    <div class="flex items-center justify-between">
+                      <span class="text-xs font-bold text-slate-700">Penyesuaian Penandatangan (Opsional)</span>
+                      ${canMenu ? `<button type="button" onclick="App.navigateTo('menus')" class="text-[11px] text-indigo-600 hover:underline">Atur Blok TTD</button>` : ''}
+                    </div>
+                    ${sigOverrideHtml}
+                  </div>
+                </div>
+              </div>
+
+              <!-- LIVE A4 / 2xA5 PREVIEW PANEL -->
+              <div class="xl:col-span-7 ${!isFormTab ? 'block' : 'hidden xl:block'}">
+                <div class="bg-slate-200/80 rounded-2xl p-3 sm:p-5 border border-slate-300/80">
+                  <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+                    <div class="flex items-center gap-2 text-xs font-semibold text-slate-700">
+                      <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                      <span>${cfg.a4.printMode === 'a5_duplex' ? 'Pratinjau 2 Rangkap A5 (dalam 1 A4)' : 'Pratinjau Langsung Kertas A4 (210 × 297 mm)'}</span>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2">
+                      <div class="inline-flex rounded-lg bg-white p-0.5 border border-slate-300">
+                        <button type="button" onclick="App.setQuickPrintMode('a4_single')" class="px-2.5 py-1 rounded-md text-[11px] font-semibold transition ${cfg.a4.printMode !== 'a5_duplex' ? 'bg-indigo-600 text-white' : 'text-slate-600 hover:bg-slate-100'}">1× A4</button>
+                        <button type="button" onclick="App.setQuickPrintMode('a5_duplex')" class="px-2.5 py-1 rounded-md text-[11px] font-semibold transition ${cfg.a4.printMode === 'a5_duplex' ? 'bg-indigo-600 text-white' : 'text-slate-600 hover:bg-slate-100'}">2× A5 (Rangkap)</button>
+                      </div>
+                      ${canKop ? `
+                        <button type="button" onclick="App.navigateTo('kop')" class="px-2.5 py-1 rounded-lg bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 text-xs font-medium transition">
+                          Ubah Kop
+                        </button>
+                      ` : ''}
+                      ${canPrint ? `
+                        <button type="button" onclick="A4Renderer.printRecord(App.state.editorDraft)" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold transition">
+                          <i data-lucide="printer" class="w-3.5 h-3.5"></i> Cetak
+                        </button>
+                      ` : ''}
+                    </div>
+                  </div>
+                  <div id="editor-a4-wrapper" class="w-full overflow-hidden relative">
+                    <div id="editor-a4-mount"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+
+        this.refreshEditorA4Preview();
+      },
+
+      editRecord(id) {
+        if (!Auth.can('record.edit')) {
+          UI.toast('Akses ditolak: Anda tidak memiliki izin mengubah tanda terima.', 'error');
+          return;
+        }
+        const rec = DataService.getRecords().find((r) => r.id === id);
+        if (!rec) {
+          UI.toast('Data tanda terima tidak ditemukan.', 'error');
+          return;
+        }
+        this.state.editingRecordId = rec.id;
+        this.state.editorDraft = JSON.parse(JSON.stringify(rec));
+        this.navigateTo('create');
+      },
+
+      setQuickPrintMode(mode) {
+        const cfg = DataService.getConfig();
+        cfg.a4.printMode = mode;
+        DataService.saveConfig(cfg);
+        this.updateStorageBadge();
+        this.renderEditorView(document.getElementById('main-view'));
+        lucide.createIcons({ nodes: [document.getElementById('main-view')] });
+      },
+
+      setMobileEditorTab(tab) {
+        this.state.mobileEditorTab = tab;
+        this.renderEditorView(document.getElementById('main-view'));
+        lucide.createIcons({ nodes: [document.getElementById('main-view')] });
+      },
+
+      refreshEditorA4Preview() {
+        const mount = document.getElementById('editor-a4-mount');
+        if (!mount || !this.state.editorDraft) return;
+        const cfg = DataService.getConfig();
+        mount.innerHTML = A4Renderer.renderSheetHtml(this.state.editorDraft, cfg);
+        const sheet = mount.querySelector('.a4-sheet');
+        if (sheet) sheet.classList.add('a4-sheet-screen');
+        requestAnimationFrame(() => A4Renderer.fitPreviewToContainer('editor-a4-wrapper'));
+      },
+
+      updateDraftRoot(key, value) {
+        if (!this.state.editorDraft) return;
+        this.state.editorDraft[key] = value;
+        this.refreshEditorA4Preview();
+      },
+
+      updateDraftMeta(fieldId, value) {
+        if (!this.state.editorDraft) return;
+        this.state.editorDraft.meta[fieldId] = value;
+        this.refreshEditorA4Preview();
+      },
+
+      updateDraftItem(idx, colId, value) {
+        if (!this.state.editorDraft || !this.state.editorDraft.items[idx]) return;
+        this.state.editorDraft.items[idx][colId] = value;
+        this.refreshEditorA4Preview();
+      },
+
+      updateDraftSignature(sigId, prop, value) {
+        if (!this.state.editorDraft) return;
+        if (!this.state.editorDraft.signatures) this.state.editorDraft.signatures = {};
+        if (!this.state.editorDraft.signatures[sigId]) this.state.editorDraft.signatures[sigId] = {};
+        this.state.editorDraft.signatures[sigId][prop] = value;
+        this.refreshEditorA4Preview();
+      },
+
+      addDraftItem() {
+        const cfg = DataService.getConfig();
+        const row = {};
+        cfg.tableColumns.forEach((c) => {
+          row[c.id] = c.id === 'jumlah' ? '1' : c.id === 'satuan' ? 'Berkas' : '';
+        });
+        this.state.editorDraft.items.push(row);
+        this.renderEditorView(document.getElementById('main-view'));
+        lucide.createIcons({ nodes: [document.getElementById('main-view')] });
+      },
+
+      removeDraftItem(idx) {
+        if (this.state.editorDraft.items.length <= 1) return;
+        this.state.editorDraft.items.splice(idx, 1);
+        this.renderEditorView(document.getElementById('main-view'));
+        lucide.createIcons({ nodes: [document.getElementById('main-view')] });
+      },
+
+      regenerateDraftNumber() {
+        this.state.editorDraft.nomor = DataService.generateNextNumber();
+        this.renderEditorView(document.getElementById('main-view'));
+        lucide.createIcons({ nodes: [document.getElementById('main-view')] });
+        UI.toast('Nomor tanda terima diperbarui.', 'info');
+      },
+
+      resetEditorDraft() {
+        UI.confirm({
+          title: 'Reset Formulir?',
+          message: 'Semua isian yang belum disimpan pada formulir ini akan dikembalikan ke kosong.',
+          confirmText: 'Ya, Reset',
+          onConfirm: () => {
+            this.initNewDraft();
+            this.renderEditorView(document.getElementById('main-view'));
+            lucide.createIcons({ nodes: [document.getElementById('main-view')] });
+            UI.toast('Formulir berhasil direset.', 'info');
+          }
+        });
+      },
+
+      async saveCurrentDraft(andPrint = false) {
+        const isEditing = Boolean(this.state.editingRecordId);
+        if (isEditing && !Auth.can('record.edit')) {
+          UI.toast('Akses ditolak: Anda tidak memiliki izin mengubah data.', 'error');
+          return;
+        }
+        if (!isEditing && !Auth.can('record.create')) {
+          UI.toast('Akses ditolak: Anda tidak memiliki izin membuat tanda terima baru.', 'error');
+          return;
+        }
+        if (andPrint && !Auth.can('record.print')) {
+          UI.toast('Akses ditolak: Anda tidak memiliki izin cetak.', 'warning');
+          andPrint = false;
+        }
+        const draft = this.state.editorDraft;
+        const cfg = DataService.getConfig();
+
+        if (!draft.nomor || !draft.nomor.trim()) {
+          UI.toast('Nomor tanda terima wajib diisi.', 'warning');
+          return;
+        }
+        for (const field of cfg.metaFields) {
+          if (field.visible && field.required && !(draft.meta && String(draft.meta[field.id] || '').trim())) {
+            UI.toast(`Kolom "${field.label}" wajib diisi.`, 'warning');
+            return;
+          }
+        }
+
+        const res = await DataService.saveRecord(draft);
+        if (!res.ok) {
+          UI.toast(res.error || 'Gagal menyimpan data.', 'error');
+          return;
+        }
+
+        this.state.editingRecordId = res.data.id;
+        this.state.editorDraft = JSON.parse(JSON.stringify(res.data));
+        this.renderSidebar();
+        UI.toast('Tanda terima berhasil disimpan ke arsip.', 'success');
+
+        if (andPrint) {
+          A4Renderer.printRecord(res.data);
+        }
+      },
+
+      /* ------------------------------------------------------------
+         VIEW 3: ARCHIVE (SEARCH, FILTER, PAGINATION, PRINT, DELETE)
+         ------------------------------------------------------------ */
+      renderArchiveView(container, lockedStatus = null) {
+        const records = DataService.getRecords();
+        const filter = this.state.archiveFilter;
+        const activeStatus = lockedStatus || filter.status;
+        const query = (filter.search || '').trim().toLowerCase();
+
+        const filtered = records.filter((r) => {
+          if (activeStatus !== 'ALL' && r.status !== activeStatus) return false;
+          if (!query) return true;
+          const haystack = [
+            r.nomor,
+            r.status,
+            r.notes,
+            ...Object.values(r.meta || {}),
+            ...(r.items || []).flatMap((it) => Object.values(it || {}))
+          ].join(' ').toLowerCase();
+          return haystack.includes(query);
+        });
+
+        const totalPages = Math.max(1, Math.ceil(filtered.length / filter.pageSize));
+        if (filter.page > totalPages) filter.page = totalPages;
+        const startIdx = (filter.page - 1) * filter.pageSize;
+        const pageItems = filtered.slice(startIdx, startIdx + filter.pageSize);
+
+        const canCreate = Auth.can('record.create');
+        const canEdit = Auth.can('record.edit');
+        const canDelete = Auth.can('record.delete');
+        const canPrint = Auth.can('record.print');
+
+        const rowsHtml = pageItems.map((r) => `
+          <tr class="hover:bg-slate-50/80 transition">
+            <td class="px-4 py-3.5 text-sm font-bold text-slate-900 whitespace-nowrap">${Security.escapeHtml(r.nomor)}</td>
+            <td class="px-4 py-3.5 text-sm text-slate-600 whitespace-nowrap">${Security.escapeHtml(Format.indoDate(r.meta && r.meta.tanggal))}</td>
+            <td class="px-4 py-3.5 text-sm text-slate-800">
+              <div class="font-medium">${Security.escapeHtml((r.meta && r.meta.pengirim) || '-')}</div>
+              <div class="text-xs text-slate-400">${Security.escapeHtml((r.meta && r.meta.instansiPengirim) || '')}</div>
+            </td>
+            <td class="px-4 py-3.5 text-sm text-slate-800">
+              <div class="font-medium">${Security.escapeHtml((r.meta && r.meta.penerima) || '-')}</div>
+              <div class="text-xs text-slate-400">${Security.escapeHtml((r.meta && r.meta.instansiPenerima) || '')}</div>
+            </td>
+            <td class="px-4 py-3.5 text-sm text-slate-600 text-center">
+              <span class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-semibold text-xs">${(r.items || []).length} item</span>
+            </td>
+            <td class="px-4 py-3.5 text-sm">${Format.statusBadge(r.status)}</td>
+            <td class="px-4 py-3.5 text-right whitespace-nowrap">
+              <div class="inline-flex items-center gap-1">
+                <button type="button" onclick="App.previewRecordModal('${r.id}')" class="p-2 rounded-lg text-slate-500 hover:bg-indigo-50 hover:text-indigo-600 transition" title="Pratinjau A4">
+                  <i data-lucide="eye" class="w-4 h-4"></i>
+                </button>
+                ${canPrint ? `
+                  <button type="button" onclick="App.printById('${r.id}')" class="p-2 rounded-lg text-slate-500 hover:bg-emerald-50 hover:text-emerald-600 transition" title="Cetak A4">
+                    <i data-lucide="printer" class="w-4 h-4"></i>
+                  </button>
+                ` : ''}
+                ${canEdit ? `
+                  <button type="button" onclick="App.editRecord('${r.id}')" class="p-2 rounded-lg text-slate-500 hover:bg-amber-50 hover:text-amber-600 transition" title="Edit">
+                    <i data-lucide="pencil" class="w-4 h-4"></i>
+                  </button>
+                ` : ''}
+                ${canCreate ? `
+                  <button type="button" onclick="App.duplicateRecord('${r.id}')" class="p-2 rounded-lg text-slate-500 hover:bg-sky-50 hover:text-sky-600 transition" title="Duplikasi">
+                    <i data-lucide="copy" class="w-4 h-4"></i>
+                  </button>
+                ` : ''}
+                ${canDelete ? `
+                  <button type="button" onclick="App.confirmDeleteRecord('${r.id}')" class="p-2 rounded-lg text-slate-500 hover:bg-rose-50 hover:text-rose-600 transition" title="Hapus">
+                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                  </button>
+                ` : ''}
+              </div>
+            </td>
+          </tr>
+        `).join('');
+
+        container.innerHTML = `
+          <div class="space-y-4">
+            <!-- Filter Bar -->
+            <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-xs flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+              <div class="relative flex-1 max-w-md">
+                <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+                <input
+                  type="text"
+                  value="${Security.escapeHtml(filter.search)}"
+                  placeholder="Cari nomor, pengirim, penerima, atau uraian berkas..."
+                  oninput="App.onArchiveSearch(this.value)"
+                  class="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 bg-slate-50/70 focus:bg-white focus:border-indigo-500 outline-none text-sm"
+                />
+              </div>
+
+              <div class="flex flex-wrap items-center gap-2">
+                ${lockedStatus ? `
+                  <span class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-indigo-50 text-indigo-700 border border-indigo-200 text-xs font-semibold">
+                    <i data-lucide="filter" class="w-3.5 h-3.5"></i> Filter Menu: ${Security.escapeHtml(lockedStatus)}
+                  </span>
+                ` : `
+                  <select onchange="App.onArchiveStatusChange(this.value)" class="px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs sm:text-sm font-medium text-slate-700 outline-none focus:border-indigo-500">
+                    <option value="ALL" ${activeStatus === 'ALL' ? 'selected' : ''}>Semua Status</option>
+                    ${['Diterima', 'Diproses', 'Arsip', 'Revisi'].map((s) => `<option value="${s}" ${activeStatus === s ? 'selected' : ''}>${s}</option>`).join('')}
+                  </select>
+                `}
+                ${canCreate ? `
+                  <button type="button" onclick="App.navigateTo('create', { resetDraft: true })" class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-semibold shadow-xs transition">
+                    <i data-lucide="plus" class="w-4 h-4"></i> Baru
+                  </button>
+                ` : ''}
+              </div>
+            </div>
+
+            <!-- Table / Empty State Card -->
+            <div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+              ${filtered.length === 0 ? `
+                <div class="p-10 text-center flex flex-col items-center justify-center">
+                  <div class="w-14 h-14 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mb-3">
+                    <i data-lucide="${records.length === 0 ? 'inbox' : 'search-x'}" class="w-7 h-7"></i>
+                  </div>
+                  <h5 class="font-bold text-slate-800 text-base">
+                    ${records.length === 0 ? 'Belum Ada Arsip Tanda Terima' : 'Tidak Ada Data yang Cocok'}
+                  </h5>
+                  <p class="text-sm text-slate-500 max-w-md mt-1">
+                    ${records.length === 0
+                      ? 'Database arsip masih kosong. Buat tanda terima surat/berkas pertama Anda sekarang.'
+                      : 'Coba ubah kata kunci pencarian atau filter status yang dipilih.'}
+                  </p>
+                  <div class="mt-4 flex flex-wrap justify-center gap-2">
+                    ${records.length === 0 && canCreate ? `
+                      <button type="button" onclick="App.navigateTo('create', { resetDraft: true })" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-semibold">
+                        <i data-lucide="plus" class="w-4 h-4"></i> Buat Tanda Terima
+                      </button>
+                    ` : records.length > 0 ? `
+                      <button type="button" onclick="App.onArchiveSearch(''); ${lockedStatus ? '' : "App.onArchiveStatusChange('ALL');"}" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs sm:text-sm font-semibold">
+                        Reset Pencarian
+                      </button>
+                    ` : ''}
+                  </div>
+                </div>
+              ` : `
+                <div class="overflow-x-auto">
+                  <table class="w-full text-left border-collapse">
+                    <thead class="bg-slate-50 border-b border-slate-200/80 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                      <tr>
+                        <th class="px-4 py-3">No. Tanda Terima</th>
+                        <th class="px-4 py-3">Tanggal</th>
+                        <th class="px-4 py-3">Yang Menyerahkan</th>
+                        <th class="px-4 py-3">Yang Menerima</th>
+                        <th class="px-4 py-3 text-center">Berkas</th>
+                        <th class="px-4 py-3">Status</th>
+                        <th class="px-4 py-3 text-right">Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">${rowsHtml}</tbody>
+                  </table>
+                </div>
+
+                <div class="px-4 py-3 border-t border-slate-100 bg-slate-50/50 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-600">
+                  <span>Menampilkan <strong>${startIdx + 1}-${Math.min(startIdx + filter.pageSize, filtered.length)}</strong> dari <strong>${filtered.length}</strong> arsip</span>
+                  <div class="inline-flex items-center gap-1.5">
+                    <button type="button" ${filter.page <= 1 ? 'disabled' : ''} onclick="App.setArchivePage(${filter.page - 1})" class="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-40 font-semibold">Sebelumnya</button>
+                    <span class="px-2 font-semibold text-slate-700">Hal ${filter.page} / ${totalPages}</span>
+                    <button type="button" ${filter.page >= totalPages ? 'disabled' : ''} onclick="App.setArchivePage(${filter.page + 1})" class="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-40 font-semibold">Berikutnya</button>
+                  </div>
+                </div>
+              `}
+            </div>
+          </div>
+        `;
+      },
+
+      onArchiveSearch(val) {
+        this.state.archiveFilter.search = val;
+        this.state.archiveFilter.page = 1;
+        this.navigateTo(this.state.activeMenuId);
+        const inp = document.querySelector('#main-view input[type="text"]');
+        if (inp) {
+          inp.focus();
+          inp.setSelectionRange(inp.value.length, inp.value.length);
+        }
+      },
+
+      onArchiveStatusChange(val) {
+        this.state.archiveFilter.status = val;
+        this.state.archiveFilter.page = 1;
+        this.navigateTo(this.state.activeMenuId);
+      },
+
+      setArchivePage(page) {
+        this.state.archiveFilter.page = Math.max(1, page);
+        this.navigateTo(this.state.activeMenuId);
+      },
+
+      printById(id) {
+        if (!Auth.can('record.print')) {
+          UI.toast('Akses ditolak: Anda tidak memiliki izin mencetak dokumen.', 'error');
+          return;
+        }
+        const rec = DataService.getRecords().find((r) => r.id === id);
+        if (!rec) return UI.toast('Data tidak ditemukan.', 'error');
+        A4Renderer.printRecord(rec);
+      },
+
+      duplicateRecord(id) {
+        if (!Auth.can('record.create')) {
+          UI.toast('Akses ditolak: Anda tidak memiliki izin membuat tanda terima baru.', 'error');
+          return;
+        }
+        const rec = DataService.getRecords().find((r) => r.id === id);
+        if (!rec) return;
+        const copy = JSON.parse(JSON.stringify(rec));
+        copy.id = null;
+        copy.nomor = DataService.generateNextNumber();
+        if (copy.meta && copy.meta.tanggal) copy.meta.tanggal = Format.todayISO();
+        this.state.editingRecordId = null;
+        this.state.editorDraft = copy;
+        this.navigateTo('create');
+        UI.toast('Data diduplikasi ke formulir baru.', 'info');
+      },
+
+      confirmDeleteRecord(id) {
+        if (!Auth.can('record.delete')) {
+          UI.toast('Akses ditolak: Anda tidak memiliki izin menghapus arsip.', 'error');
+          return;
+        }
+        UI.confirm({
+          title: 'Hapus Tanda Terima?',
+          message: 'Dokumen tanda terima ini akan dihapus permanen dari arsip.',
+          confirmText: 'Ya, Hapus',
+          danger: true,
+          onConfirm: async () => {
+            const res = await DataService.deleteRecord(id);
+            if (res.ok) {
+              UI.toast('Tanda terima berhasil dihapus.', 'success');
+              this.renderSidebar();
+              this.navigateTo(this.state.activeMenuId);
+            } else {
+              UI.toast(res.error || 'Gagal menghapus.', 'error');
+            }
+          }
+        });
+      },
+
+      previewRecordModal(id, overrideMode = null) {
+        const rec = DataService.getRecords().find((r) => r.id === id);
+        if (!rec) return;
+        const cfg = DataService.getConfig();
+        const activeMode = overrideMode || cfg.a4.printMode || 'a4_single';
+
+        UI.openCustomModal(`
+          <div class="px-5 py-3.5 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2 bg-slate-50">
+            <div>
+              <h3 class="font-bold text-slate-900 text-sm">Pratinjau Cetak — ${Security.escapeHtml(rec.nomor)}</h3>
+              <p class="text-xs text-slate-500">${activeMode === 'a5_duplex' ? 'Format 2 Rangkap A5 dalam 1 Lembar A4 Portrait' : 'Format 1 Lembar A4 Portrait (210 × 297 mm)'}</p>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+              <div class="inline-flex rounded-lg bg-white p-0.5 border border-slate-300">
+                <button type="button" onclick="App.previewRecordModal('${rec.id}', 'a4_single')" class="px-2.5 py-1 rounded-md text-[11px] font-semibold transition ${activeMode !== 'a5_duplex' ? 'bg-indigo-600 text-white' : 'text-slate-600 hover:bg-slate-100'}">1× A4</button>
+                <button type="button" onclick="App.previewRecordModal('${rec.id}', 'a5_duplex')" class="px-2.5 py-1 rounded-md text-[11px] font-semibold transition ${activeMode === 'a5_duplex' ? 'bg-indigo-600 text-white' : 'text-slate-600 hover:bg-slate-100'}">2× A5</button>
+              </div>
+              ${Auth.can('record.print') ? `
+                <button type="button" onclick="A4Renderer.printRecord(DataService.getRecords().find(r=>r.id==='${rec.id}'), '${activeMode}')" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold">
+                  <i data-lucide="printer" class="w-3.5 h-3.5"></i> Cetak / PDF
+                </button>
+              ` : ''}
+              <button type="button" onclick="UI.closeModal()" class="p-1.5 rounded-lg text-slate-500 hover:bg-slate-200">
+                <i data-lucide="x" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </div>
+          <div class="p-4 bg-slate-200 overflow-y-auto flex-1">
+            <div id="modal-a4-wrapper" class="w-full overflow-hidden relative">
+              <div id="modal-a4-mount">${A4Renderer.renderSheetHtml(rec, cfg, activeMode)}</div>
+            </div>
+          </div>
+        `, 'max-w-4xl');
+        const sheet = document.querySelector('#modal-a4-mount .a4-sheet');
+        if (sheet) sheet.classList.add('a4-sheet-screen');
+        requestAnimationFrame(() => A4Renderer.fitPreviewToContainer('modal-a4-wrapper'));
+      },
+
+      /* ------------------------------------------------------------
+         VIEW 4: KOP HEADER (GAMBAR / TEKS) & FORMAT A4 / 2xA5
+         ------------------------------------------------------------ */
+      getSampleRecordForPreview() {
+        return {
+          nomor: DataService.generateNextNumber(),
+          status: 'Diterima',
+          meta: {
+            tanggal: Format.todayISO(),
+            pengirim: 'Budi Santoso',
+            instansiPengirim: 'Bagian Sekretariat',
+            penerima: 'Siti Aminah',
+            instansiPenerima: 'Subbagian Kearsipan',
+            perihal: 'Penyerahan Berkas Laporan Bulanan'
+          },
+          items: [
+            { noSurat: '001/SK/XI/2026', namaBerkas: 'Surat Pengantar & Laporan Keuangan', jumlah: '1', satuan: 'Berkas', keterangan: 'Asli & Lengkap' },
+            { noSurat: '002/ND/XI/2026', namaBerkas: 'Lampiran Dokumen Pendukung', jumlah: '2', satuan: 'Map', keterangan: 'Fotokopi' }
+          ],
+          notes: 'Contoh pratinjau format kertas cetak A4 / 2 Rangkap A5.',
+          signatures: {}
+        };
+      },
+
+      renderKopA4View(container) {
+        const cfg = DataService.getConfig();
+        const kop = cfg.kop;
+        const a4 = cfg.a4;
+        const safeImg = Security.sanitizeImageSrc(kop.imageSrc);
+
+        container.innerHTML = `
+          <div class="grid grid-cols-1 xl:grid-cols-12 gap-5 items-start">
+            <!-- LEFT SETTINGS -->
+            <div class="xl:col-span-5 space-y-4">
+              <!-- Kop Header Card -->
+              <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs space-y-4">
+                <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                  <h4 class="font-bold text-slate-900 text-sm flex items-center gap-2">
+                    <i data-lucide="image" class="w-4 h-4 text-indigo-600"></i> Pengaturan Kop Header
+                  </h4>
+                  <div class="inline-flex rounded-lg bg-slate-100 p-0.5 text-xs">
+                    <button type="button" onclick="App.updateKopSetting('mode', 'image', true)" class="px-2.5 py-1 rounded-md font-semibold transition ${kop.mode === 'image' ? 'bg-white text-indigo-700 shadow-xs' : 'text-slate-600'}">Gambar</button>
+                    <button type="button" onclick="App.updateKopSetting('mode', 'text', true)" class="px-2.5 py-1 rounded-md font-semibold transition ${kop.mode === 'text' ? 'bg-white text-indigo-700 shadow-xs' : 'text-slate-600'}">Teks</button>
+                  </div>
+                </div>
+
+                ${kop.mode === 'image' ? `
+                  <div class="space-y-3">
+                    <div class="p-4 rounded-xl border-2 border-dashed border-indigo-200 bg-indigo-50/40 text-center space-y-2.5">
+                      ${safeImg ? `
+                        <img src="${safeImg}" alt="Preview Kop" class="max-h-24 mx-auto object-contain rounded-lg border border-slate-200 bg-white p-1" />
+                      ` : `
+                        <div class="w-11 h-11 rounded-xl bg-indigo-100 text-indigo-600 mx-auto flex items-center justify-center">
+                          <i data-lucide="upload-cloud" class="w-6 h-6"></i>
+                        </div>
+                      `}
+                      <div class="text-xs text-slate-600">Unggah gambar banner Kop Surat (PNG / JPG / WebP, rasio lebar disarankan 5:1)</div>
+                      <div class="flex flex-wrap justify-center gap-2">
+                        <label class="cursor-pointer inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold transition">
+                          <i data-lucide="upload" class="w-3.5 h-3.5"></i> Pilih Gambar Kop
+                          <input type="file" accept="image/png,image/jpeg,image/webp" class="hidden" onchange="App.handleKopImageUpload(this)" />
+                        </label>
+                        ${safeImg ? `
+                          <button type="button" onclick="App.removeKopImage()" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-semibold transition">
+                            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> Hapus Gambar
+                          </button>
+                        ` : ''}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label class="block text-xs font-semibold text-slate-700 mb-1">Atau Pakai Tautan URL Gambar Kop</label>
+                      <div class="flex gap-2">
+                        <input type="url" id="kop-url-input" value="${Security.escapeHtml(kop.imageUrlInput || '')}" placeholder="https://.../kop-instansi.png" class="flex-1 px-3 py-2 rounded-xl border border-slate-200 text-xs outline-none focus:border-indigo-500" />
+                        <button type="button" onclick="App.applyKopImageUrl()" class="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold">Terapkan</button>
+                      </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                      <div>
+                        <label class="block text-[11px] font-semibold text-slate-600 mb-1">Tinggi Kop (${kop.heightMm} mm)</label>
+                        <input type="range" min="18" max="65" value="${kop.heightMm}" oninput="App.updateKopSetting('heightMm', Number(this.value), false)" onchange="App.updateKopSetting('heightMm', Number(this.value), true)" class="w-full accent-indigo-600" />
+                      </div>
+                      <div>
+                        <label class="block text-[11px] font-semibold text-slate-600 mb-1">Proporsi</label>
+                        <select onchange="App.updateKopSetting('fitMode', this.value, false)" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs bg-white">
+                          <option value="contain" ${kop.fitMode === 'contain' ? 'selected' : ''}>Proporsional (Contain)</option>
+                          <option value="cover" ${kop.fitMode === 'cover' ? 'selected' : ''}>Penuh Lebar (Cover)</option>
+                          <option value="fill" ${kop.fitMode === 'fill' ? 'selected' : ''}>Rentangkan (Fill)</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label class="block text-[11px] font-semibold text-slate-600 mb-1">Posisi</label>
+                        <select onchange="App.updateKopSetting('align', this.value, false)" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs bg-white">
+                          <option value="left" ${kop.align === 'left' ? 'selected' : ''}>Kiri</option>
+                          <option value="center" ${kop.align === 'center' ? 'selected' : ''}>Tengah</option>
+                          <option value="right" ${kop.align === 'right' ? 'selected' : ''}>Kanan</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                ` : `
+                  <div class="space-y-2.5">
+                    <div>
+                      <label class="block text-xs font-semibold text-slate-700 mb-1">Baris 1 (Instansi Induk)</label>
+                      <input type="text" value="${Security.escapeHtml(kop.textLine1)}" oninput="App.updateKopSetting('textLine1', this.value, false)" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs" />
+                    </div>
+                    <div>
+                      <label class="block text-xs font-semibold text-slate-700 mb-1">Baris 2 (Nama Unit / Dinas)</label>
+                      <input type="text" value="${Security.escapeHtml(kop.textLine2)}" oninput="App.updateKopSetting('textLine2', this.value, false)" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs" />
+                    </div>
+                    <div>
+                      <label class="block text-xs font-semibold text-slate-700 mb-1">Baris 3 (Alamat &amp; Kontak)</label>
+                      <input type="text" value="${Security.escapeHtml(kop.textLine3)}" oninput="App.updateKopSetting('textLine3', this.value, false)" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs" />
+                    </div>
+                  </div>
+                `}
+
+                <div class="grid grid-cols-2 gap-3 pt-2 border-t border-slate-100">
+                  <div>
+                    <label class="block text-[11px] font-semibold text-slate-600 mb-1">Garis Pembatas Kop</label>
+                    <select onchange="App.updateKopSetting('dividerStyle', this.value, false); App.updateKopSetting('showDivider', this.value !== 'none', false)" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs bg-white">
+                      <option value="double" ${kop.showDivider && kop.dividerStyle === 'double' ? 'selected' : ''}>Garis Ganda Resmi</option>
+                      <option value="solid" ${kop.showDivider && kop.dividerStyle === 'solid' ? 'selected' : ''}>Garis Tebal Tunggal</option>
+                      <option value="thin" ${kop.showDivider && kop.dividerStyle === 'thin' ? 'selected' : ''}>Garis Tipis</option>
+                      <option value="none" ${!kop.showDivider || kop.dividerStyle === 'none' ? 'selected' : ''}>Tanpa Garis</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block text-[11px] font-semibold text-slate-600 mb-1">Jarak Bawah Kop (mm)</label>
+                    <input type="number" min="1" max="20" value="${kop.marginBottomMm}" onchange="App.updateKopSetting('marginBottomMm', Number(this.value), false)" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs" />
+                  </div>
+                </div>
+              </div>
+
+              <!-- Format Cetak A4 & 2 Rangkap A5 Card -->
+              <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs space-y-4">
+                <div class="border-b border-slate-100 pb-3">
+                  <h4 class="font-bold text-slate-900 text-sm flex items-center gap-2">
+                    <i data-lucide="file-text" class="w-4 h-4 text-indigo-600"></i> Tata Letak Kertas A4 &amp; 2 Rangkap A5
+                  </h4>
+                </div>
+
+                <div>
+                  <label class="block text-xs font-semibold text-slate-700 mb-1.5">Mode Cetak Default</label>
+                  <div class="grid grid-cols-2 gap-2">
+                    <button type="button" onclick="App.updateA4Setting('printMode', 'a4_single', true)" class="p-3 rounded-xl border text-left transition ${a4.printMode !== 'a5_duplex' ? 'border-indigo-600 bg-indigo-50/70 text-indigo-900' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'}">
+                      <div class="text-xs font-bold">1 Lembar A4 Penuh</div>
+                      <div class="text-[11px] opacity-80 mt-0.5">210 × 297 mm standar</div>
+                    </button>
+                    <button type="button" onclick="App.updateA4Setting('printMode', 'a5_duplex', true)" class="p-3 rounded-xl border text-left transition ${a4.printMode === 'a5_duplex' ? 'border-indigo-600 bg-indigo-50/70 text-indigo-900' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'}">
+                      <div class="text-xs font-bold">2 Rangkap A5 (1 A4)</div>
+                      <div class="text-[11px] opacity-80 mt-0.5">Atas &amp; Bawah + garis potong</div>
+                    </button>
+                  </div>
+                </div>
+
+                ${a4.printMode === 'a5_duplex' ? `
+                  <div class="p-3.5 rounded-xl bg-indigo-50/50 border border-indigo-200/70 space-y-2.5">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      <div>
+                        <label class="block text-[11px] font-semibold text-slate-700 mb-1">Label Rangkap 1 (Atas)</label>
+                        <input type="text" value="${Security.escapeHtml(a4.copy1Label || '')}" oninput="App.updateA4Setting('copy1Label', this.value, false)" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-xs" />
+                      </div>
+                      <div>
+                        <label class="block text-[11px] font-semibold text-slate-700 mb-1">Label Rangkap 2 (Bawah)</label>
+                        <input type="text" value="${Security.escapeHtml(a4.copy2Label || '')}" oninput="App.updateA4Setting('copy2Label', this.value, false)" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-xs" />
+                      </div>
+                    </div>
+                    <label class="inline-flex items-center gap-2 text-xs font-medium text-slate-700 cursor-pointer">
+                      <input type="checkbox" ${a4.showCutLine ? 'checked' : ''} onchange="App.updateA4Setting('showCutLine', this.checked, false)" class="accent-indigo-600" />
+                      Tampilkan garis putus-putus potong (&#9986;) di tengah A4
+                    </label>
+                  </div>
+                ` : ''}
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div class="sm:col-span-2">
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Judul Dokumen</label>
+                    <input type="text" value="${Security.escapeHtml(a4.docTitle)}" oninput="App.updateA4Setting('docTitle', this.value, false)" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs" />
+                  </div>
+                  <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Kota Tanda Tangan</label>
+                    <input type="text" value="${Security.escapeHtml(a4.city)}" oninput="App.updateA4Setting('city', this.value, false)" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs" />
+                  </div>
+                  <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Pola Nomor Otomatis</label>
+                    <input type="text" value="${Security.escapeHtml(a4.autoNumberPattern)}" oninput="App.updateA4Setting('autoNumberPattern', this.value, false)" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-mono" />
+                  </div>
+                  <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Jenis Huruf</label>
+                    <select onchange="App.updateA4Setting('fontFamily', this.value, false)" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs bg-white">
+                      <option value="serif" ${a4.fontFamily === 'serif' ? 'selected' : ''}>Resmi (Times New Roman)</option>
+                      <option value="sans" ${a4.fontFamily === 'sans' ? 'selected' : ''}>Modern (Inter Sans)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Margin Kertas (mm) / Font (pt)</label>
+                    <div class="grid grid-cols-2 gap-2">
+                      <input type="number" min="8" max="25" value="${a4.marginMm}" onchange="App.updateA4Setting('marginMm', Number(this.value), false)" class="w-full px-2.5 py-2 rounded-xl border border-slate-200 text-xs" title="Margin (mm)" />
+                      <input type="number" min="9" max="14" value="${a4.fontSizePt}" onchange="App.updateA4Setting('fontSizePt', Number(this.value), false)" class="w-full px-2.5 py-2 rounded-xl border border-slate-200 text-xs" title="Font (pt)" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- RIGHT LIVE PREVIEW -->
+            <div class="xl:col-span-7">
+              <div class="bg-slate-200/80 rounded-2xl p-3 sm:p-5 border border-slate-300/80">
+                <div class="flex items-center justify-between gap-2 mb-3">
+                  <span class="text-xs font-semibold text-slate-700">Pratinjau Langsung Format Cetak (${a4.printMode === 'a5_duplex' ? '2 Rangkap A5 dalam 1 A4' : '1 Lembar A4 Penuh'})</span>
+                  ${Auth.can('record.print') ? `
+                    <button type="button" onclick="A4Renderer.printRecord(App.getSampleRecordForPreview())" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold">
+                      <i data-lucide="printer" class="w-3.5 h-3.5"></i> Uji Cetak
+                    </button>
+                  ` : ''}
+                </div>
+                <div id="kop-a4-wrapper" class="w-full overflow-hidden relative">
+                  <div id="kop-a4-mount"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+
+        this.refreshKopPreview();
+      },
+
+      refreshKopPreview() {
+        const mount = document.getElementById('kop-a4-mount');
+        if (!mount) return;
+        const cfg = DataService.getConfig();
+        mount.innerHTML = A4Renderer.renderSheetHtml(this.getSampleRecordForPreview(), cfg);
+        const sheet = mount.querySelector('.a4-sheet');
+        if (sheet) sheet.classList.add('a4-sheet-screen');
+        requestAnimationFrame(() => A4Renderer.fitPreviewToContainer('kop-a4-wrapper'));
+      },
+
+      updateKopSetting(key, val, rerender = false) {
+        const cfg = DataService.getConfig();
+        cfg.kop[key] = val;
+        DataService.saveConfig(cfg);
+        if (rerender) {
+          this.renderKopA4View(document.getElementById('main-view'));
+          lucide.createIcons({ nodes: [document.getElementById('main-view')] });
+        } else {
+          this.refreshKopPreview();
+        }
+      },
+
+      async handleKopImageUpload(input) {
+        const file = input.files && input.files[0];
+        if (!file) return;
+        const check = Security.validateImageFile(file);
+        if (!check.ok) {
+          UI.toast(check.error, 'error');
+          input.value = '';
+          return;
+        }
+        try {
+          const { dataUrl, mimeType } = await Security.compressImageToDataUrl(file);
+          const cfg = DataService.getConfig();
+          cfg.kop.mode = 'image';
+          cfg.kop.imageSrc = dataUrl;
+
+          // If GAS mode is enabled, upload to Google Drive and store direct Drive URL
+          if (cfg.gas.enabled && cfg.gas.endpointUrl && Auth.getSessionToken()) {
+            UI.toast('Mengunggah gambar Kop ke Google Drive...', 'info');
+            const driveRes = await DataService.uploadKopToDrive(dataUrl, mimeType, file.name);
+            if (driveRes.ok && driveRes.data) {
+              cfg.kop.driveFileId = driveRes.data.fileId;
+              cfg.kop.imageSrc = driveRes.data.directUrl;
+              cfg.kop.imageUrlInput = driveRes.data.directUrl;
+              UI.toast('Gambar Kop berhasil disimpan di Google Drive!', 'success');
+            } else if (!driveRes.skipped) {
+              UI.toast(`Upload Drive gagal (${driveRes.error}). Disimpan di browser lokal.`, 'warning');
+            }
+          } else {
+            UI.toast('Gambar Kop berhasil diterapkan.', 'success');
+          }
+
+          const saveRes = DataService.saveConfig(cfg);
+          if (!saveRes.ok) UI.toast(saveRes.error, 'error');
+          this.renderKopA4View(document.getElementById('main-view'));
+          lucide.createIcons({ nodes: [document.getElementById('main-view')] });
+        } catch (err) {
+          UI.toast(err.message || 'Gagal memproses gambar Kop.', 'error');
+        } finally {
+          input.value = '';
+        }
+      },
+
+      applyKopImageUrl() {
+        const rawUrl = (document.getElementById('kop-url-input')?.value || '').trim();
+        const safe = Security.sanitizeImageSrc(rawUrl);
+        if (!safe) {
+          UI.toast('URL gambar tidak valid. Gunakan tautan https://...', 'warning');
+          return;
+        }
+        const cfg = DataService.getConfig();
+        cfg.kop.mode = 'image';
+        cfg.kop.imageSrc = safe;
+        cfg.kop.imageUrlInput = safe;
+        DataService.saveConfig(cfg);
+        this.renderKopA4View(document.getElementById('main-view'));
